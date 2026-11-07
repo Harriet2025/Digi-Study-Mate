@@ -18,11 +18,6 @@ export interface ElevenLabsVoice {
   };
 }
 
-export interface OpenAIVoice {
-  voice: string;
-  /** Delivery instructions (supported by gpt-4o-mini-tts). */
-  instructions: string;
-}
 
 export const ELEVENLABS_VOICES: Record<Speaker, ElevenLabsVoice> = {
   // Warm, authoritative tutor: steadier delivery, slightly slower pace.
@@ -34,18 +29,5 @@ export const ELEVENLABS_VOICES: Record<Speaker, ElevenLabsVoice> = {
   Sam: {
     voiceId: process.env.ELEVENLABS_VOICE_SAM || "TX3LPaxmHKxFdv7VOQHJ", // "Liam": young, energetic
     settings: { stability: 0.38, similarity_boost: 0.75, style: 0.35, use_speaker_boost: true, speed: 1.04 },
-  },
-};
-
-export const OPENAI_VOICES: Record<Speaker, OpenAIVoice> = {
-  Alex: {
-    voice: process.env.OPENAI_VOICE_ALEX || "ash",
-    instructions:
-      "You are Alex, a warm, confident university tutor recording an educational podcast. Speak clearly at a calm, measured pace with friendly authority. Sound genuinely interested in the topic, emphasise key terms, and when asking a quiz question, slow down slightly and sound inviting.",
-  },
-  Sam: {
-    voice: process.env.OPENAI_VOICE_SAM || "coral",
-    instructions:
-      "You are Sam, an energetic, curious student co-hosting an educational podcast. Speak naturally and conversationally with upbeat energy, a slightly quicker pace, and real curiosity. Let questions rise naturally, and make thinking-out-loud moments sound genuine.",
   },
 };

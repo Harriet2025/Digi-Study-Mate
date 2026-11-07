@@ -4,7 +4,6 @@ import { parseBuffer } from "music-metadata";
 import type { ScriptLine } from "@/lib/ai/generateScript";
 import { mapWithConcurrency, withRetry } from "./async";
 import { ElevenLabsProvider } from "./providers/elevenlabs";
-import { OpenAITtsProvider } from "./providers/openai";
 import { TtsError, type AudioManifest, type AudioSegment, type TtsProvider } from "./types";
 
 export { TtsError } from "./types";
@@ -28,20 +27,11 @@ export interface GenerateAudioOptions {
   signal?: AbortSignal;
 }
 
-/** Picks the TTS provider from env: TTS_PROVIDER = "elevenlabs" (default) | "openai". */
+/** The voice provider (ElevenLabs). Other providers can implement TtsProvider and be returned here. */
 export function getTtsProvider(): TtsProvider {
-  const choice = (process.env.TTS_PROVIDER || "elevenlabs").toLowerCase();
-  if (choice === "elevenlabs") {
-    const key = process.env.ELEVENLABS_API_KEY;
-    if (!key) throw new TtsError("ELEVENLABS_API_KEY is not set.", { retryable: false });
-    return new ElevenLabsProvider(key);
-  }
-  if (choice === "openai") {
-    const key = process.env.OPENAI_API_KEY;
-    if (!key) throw new TtsError("OPENAI_API_KEY is not set.", { retryable: false });
-    return new OpenAITtsProvider(key);
-  }
-  throw new TtsError(`Unknown TTS_PROVIDER "${choice}". Use "elevenlabs" or "openai".`, { retryable: false });
+  const key = process.env.ELEVENLABS_API_KEY;
+  if (!key) throw new TtsError("ELEVENLABS_API_KEY is not set.", { retryable: false });
+  return new ElevenLabsProvider(key);
 }
 
 /** One TTS request's worth of text, before synthesis. */

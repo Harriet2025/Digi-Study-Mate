@@ -1,7 +1,6 @@
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { groqJson } from "@/lib/ai/groq";
 import { DefenseError } from "./errors";
-import { assertUsableResponse, DEFENSE_MODEL, getAnthropic } from "./generateQuestions";
 import { buildEvaluationMessage, EVALUATION_SYSTEM_PROMPT } from "./prompts";
 import { GeneratedEvaluationSchema } from "./schemas";
 import type {
@@ -64,24 +63,15 @@ export async function evaluateAnswer(
 
   const question = await loadQuestion(db, input.setId, input.questionId);
 
-  const response = await getAnthropic().beta.messages.parse(
-    {
-      model: DEFENSE_MODEL,
-      max_tokens: 16000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: "medium", format: betaZodOutputFormat(GeneratedEvaluationSchema) },
-      system: [{ type: "text", text: EVALUATION_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: buildEvaluationMessage(question, answer, input.inputMode) }],
-    },
-    { signal: options.signal },
-  );
-  assertUsableResponse(response);
-
-  const generated = response.parsed_output;
-  if (!generated) {
-    throw new DefenseError("INVALID_OUTPUT", 502, "The answer couldn't be graded. Please try again.");
-  }
+  const generated = await groqJson({
+    system: EVALUATION_SYSTEM_PROMPT,
+    user: buildEvaluationMessage(question, answer, input.inputMode),
+    schema: GeneratedEvaluationSchema,
+    schemaName: "answer_evaluation",
+    maxTokens: 16_000,
+    reasoningEffort: "medium",
+    signal: options.signal,
+  });
 
   // One result per rubric key point, in rubric order. A point the model skipped counts as missing.
   const byId = new Map(generated.keyPointResults.map((r) => [r.keyPointId, r]));

@@ -1,6 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
+import { GroqError, groqJson, MAX_INPUT_CHARS } from "./groq";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -26,17 +25,10 @@ export interface GenerateScriptOptions {
   targetMinutes?: number;
   /** e.g. "first-year university", "high school". Default "university". */
   audienceLevel?: string;
-  /** Override the client (useful for tests). */
-  client?: Anthropic;
   signal?: AbortSignal;
 }
 
-export type ScriptGenerationErrorCode =
-  | "EMPTY_INPUT"
-  | "INPUT_TOO_LARGE"
-  | "REFUSED"
-  | "TRUNCATED"
-  | "INVALID_OUTPUT";
+export type ScriptGenerationErrorCode = "EMPTY_INPUT" | "INPUT_TOO_LARGE" | "TRUNCATED" | "INVALID_OUTPUT";
 
 export class ScriptGenerationError extends Error {
   readonly code: ScriptGenerationErrorCode;
@@ -51,15 +43,10 @@ export class ScriptGenerationError extends Error {
 // Config
 // ---------------------------------------------------------------------------
 
-/** Claude Sonnet 5.5 — the current Sonnet. (Claude 3.5 Sonnet was retired on 2025-10-28.) */
-export const SCRIPT_MODEL = "claude-sonnet-5-5";
-
 /** Spoken English averages roughly 150 words per minute. */
 const WORDS_PER_MINUTE = 150;
 /** A checkpoint roughly every 3 minutes of audio. */
 const MINUTES_PER_CHECKPOINT = 3;
-/** Guard against sending an entire textbook in one request (~100k tokens). */
-const MAX_INPUT_CHARS = 400_000;
 
 // ---------------------------------------------------------------------------
 // System prompt
@@ -116,20 +103,12 @@ const ScriptSchema = z.object({
 // Main function
 // ---------------------------------------------------------------------------
 
-let defaultClient: Anthropic | null = null;
-/** Reads ANTHROPIC_API_KEY from the environment. Server-side only. */
-function getClient(): Anthropic {
-  defaultClient ??= new Anthropic();
-  return defaultClient;
-}
-
 /**
  * Turns extracted lecture chunks into a two-host audio script with
  * Active Recall Checkpoints. Returns the lines in speaking order.
  *
  * Throws ScriptGenerationError for empty/oversized input or an unusable
- * response, and the SDK's typed errors (Anthropic.RateLimitError, etc.)
- * for API failures.
+ * response, and GroqError for API failures (missing key, rate limits).
  */
 export async function generateScript(
   chunks: LectureChunk[],
@@ -173,39 +152,26 @@ export async function generateScript(
     .filter((line) => line !== null)
     .join("\n");
 
-  const client = options.client ?? getClient();
-
-  // Streamed so long scripts don't hit HTTP timeouts; finalMessage() returns the whole response.
-  const stream = client.beta.messages.stream(
-    {
-      model: SCRIPT_MODEL,
-      max_tokens: 64000,
-      // On a safety-classifier decline, the API retries on a fallback model in the same call.
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      system: [{ type: "text", text: SCRIPT_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: userMessage }],
-      output_config: { format: betaZodOutputFormat(ScriptSchema) },
-    },
-    { signal },
-  );
-
-  const response = await stream.finalMessage();
-
-  if (response.stop_reason === "refusal") {
-    throw new ScriptGenerationError(
-      "REFUSED",
-      "The model declined to generate a script for this material.",
-      { cause: response.stop_details },
-    );
-  }
-  if (response.stop_reason === "max_tokens") {
-    throw new ScriptGenerationError("TRUNCATED", "The script was cut off before it finished. Try a shorter target length.");
-  }
-
-  const parsed = response.parsed_output;
-  if (!parsed) {
-    throw new ScriptGenerationError("INVALID_OUTPUT", "The model's response did not match the script format.");
+  let parsed: z.infer<typeof ScriptSchema>;
+  try {
+    parsed = await groqJson({
+      system: SCRIPT_SYSTEM_PROMPT,
+      user: userMessage,
+      schema: ScriptSchema,
+      schemaName: "audio_script",
+      // Room for a 60-minute script plus the model's reasoning.
+      maxTokens: 60_000,
+      reasoningEffort: "medium",
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof GroqError && err.kind === "TRUNCATED") {
+      throw new ScriptGenerationError("TRUNCATED", "The script was cut off before it finished. Try a shorter target length.", { cause: err });
+    }
+    if (err instanceof GroqError && err.kind === "INVALID_OUTPUT") {
+      throw new ScriptGenerationError("INVALID_OUTPUT", "The model's response did not match the script format.", { cause: err });
+    }
+    throw err;
   }
 
   const lines: ScriptLine[] = parsed.lines

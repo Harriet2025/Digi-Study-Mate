@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { GroqError } from "@/lib/ai/groq";
 import { answerQuestion } from "@/lib/ask/answer";
 import { AskError } from "@/lib/ask/errors";
 import { transcribeQuestion, whisperExtension } from "@/lib/ask/transcribe";
@@ -113,11 +113,14 @@ function errorResponse(err: unknown): NextResponse<ErrorBody> {
       ? json(500, "CONFIGURATION_ERROR", "Spoken answers aren't set up on this server yet.")
       : json(502, "TTS_FAILED", "Alex's answer couldn't be voiced. Please try again.");
   }
-  if (err instanceof Anthropic.RateLimitError) {
-    return json(429, "BUSY", "Alex is getting a lot of questions right now. Try again in a moment.");
-  }
-  if (err instanceof Anthropic.APIError) {
-    console.error("[ask] Claude API error", err.status, err.message);
+  if (err instanceof GroqError) {
+    console.error(`[ask] Groq ${err.kind}`, err.message);
+    if (err.kind === "CONFIGURATION") {
+      return json(500, "CONFIGURATION_ERROR", "Voice questions aren't set up on this server yet.");
+    }
+    if (err.kind === "RATE_LIMITED") {
+      return json(429, "BUSY", "Alex is getting a lot of questions right now. Try again in a moment.");
+    }
     return json(502, "ANSWER_FAILED", "Alex couldn't answer right now. Please try again.");
   }
   if (err instanceof Error && err.name === "AbortError") {

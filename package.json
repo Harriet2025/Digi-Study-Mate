@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.6.0",
     "@supabase/supabase-js": "^2.119.0",
     "jszip": "^3.10.2",
     "music-metadata": "^12.3.5",

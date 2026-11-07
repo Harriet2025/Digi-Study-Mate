@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Shapes Claude must return (enforced with structured outputs). IDs, scores
+ * Shapes the model must return (enforced with Groq structured outputs). IDs, scores
  * and grades are added by our code, not the model, so they stay consistent.
  * Array lengths are checked after parsing.
  */

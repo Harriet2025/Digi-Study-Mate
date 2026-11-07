@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
+import { GroqError } from "@/lib/ai/groq";
 import { AskError } from "@/lib/ask/errors";
 import { IngestionError } from "@/lib/ingestion/errors";
 import { DefenseError } from "./errors";
@@ -15,12 +15,20 @@ export function defenseErrorResponse(err: unknown, route: string): NextResponse<
     if (err.status >= 500) console.error(`[${route}] ${err.code}`, err.cause ?? err);
     return json(err.status, err.code, err.message);
   }
-  if (err instanceof Anthropic.RateLimitError) {
-    return json(429, "BUSY", "The examiner is busy right now. Try again in a moment.");
-  }
-  if (err instanceof Anthropic.APIError) {
-    console.error(`[${route}] Claude API error`, err.status, err.message);
-    return json(502, "AI_FAILED", "The AI examiner couldn't respond. Please try again.");
+  if (err instanceof GroqError) {
+    console.error(`[${route}] Groq ${err.kind}`, err.message);
+    switch (err.kind) {
+      case "CONFIGURATION":
+        return json(500, "CONFIGURATION_ERROR", "AI features aren't set up on this server yet.");
+      case "RATE_LIMITED":
+        return json(429, "BUSY", "The examiner is busy right now. Try again in a moment.");
+      case "TRUNCATED":
+        return json(502, "TRUNCATED", "The response was cut off. Please try again.");
+      case "INVALID_OUTPUT":
+        return json(502, "INVALID_OUTPUT", "The AI examiner's response was incomplete. Please try again.");
+      default:
+        return json(502, "AI_FAILED", "The AI examiner couldn't respond. Please try again.");
+    }
   }
   if (err instanceof Error && err.name === "AbortError") {
     return json(499, "CANCELLED", "The request was cancelled.");

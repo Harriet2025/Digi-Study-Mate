@@ -1,38 +1,11 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { GROQ_MODEL, groqJson, MAX_INPUT_CHARS } from "@/lib/ai/groq";
 import { DefenseError } from "./errors";
 import { buildQuestionGenerationMessage, QUESTION_GENERATION_SYSTEM_PROMPT, QUESTIONS_PER_SET } from "./prompts";
 import { GeneratedQuestionSetSchema } from "./schemas";
 import type { DefenseQuestion, DefenseQuestionSet } from "./types";
 
-/** Claude Sonnet 5.5 (Claude 3.5 Sonnet was retired on 2025-10-28). */
-export const DEFENSE_MODEL = "claude-sonnet-5-5";
-
-const MAX_MATERIAL_CHARS = 400_000;
-
-let client: Anthropic | null = null;
-export function getAnthropic(): Anthropic {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    throw new DefenseError("CONFIGURATION_ERROR", 500, "AI features aren't set up on this server yet.", {
-      cause: new Error("ANTHROPIC_API_KEY is not set."),
-    });
-  }
-  client ??= new Anthropic();
-  return client;
-}
-
-/** Shared handling for a structured-output response that may have been declined or cut off. */
-export function assertUsableResponse(message: { stop_reason: string | null; stop_details?: unknown }): void {
-  if (message.stop_reason === "refusal") {
-    throw new DefenseError("REFUSED", 422, "This material couldn't be processed. Try different slides or notes.", {
-      cause: message.stop_details,
-    });
-  }
-  if (message.stop_reason === "max_tokens") {
-    throw new DefenseError("TRUNCATED", 502, "The response was cut off. Please try again.");
-  }
-}
+const MAX_MATERIAL_CHARS = MAX_INPUT_CHARS;
 
 /** Loads a stored document's chunks as text, with page markers the questions can cite. */
 export async function loadDocumentMaterial(
@@ -95,24 +68,18 @@ export async function generateDefenseQuestions(
     );
   }
 
-  // Streamed: a full rubric set is long, and streaming avoids HTTP timeouts.
-  const stream = getAnthropic().beta.messages.stream(
-    {
-      model: DEFENSE_MODEL,
-      max_tokens: 64000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      output_config: { effort: "high", format: betaZodOutputFormat(GeneratedQuestionSetSchema) },
-      system: [{ type: "text", text: QUESTION_GENERATION_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: buildQuestionGenerationMessage(material, title) }],
-    },
-    { signal: options.signal },
-  );
-  const response = await stream.finalMessage();
-  assertUsableResponse(response);
+  // High reasoning effort: finding real weak points is the hard part of this task.
+  const generated = await groqJson({
+    system: QUESTION_GENERATION_SYSTEM_PROMPT,
+    user: buildQuestionGenerationMessage(material, title),
+    schema: GeneratedQuestionSetSchema,
+    schemaName: "defense_question_set",
+    maxTokens: 32_000,
+    reasoningEffort: "high",
+    signal: options.signal,
+  });
 
-  const generated = response.parsed_output;
-  if (!generated || generated.questions.length < QUESTIONS_PER_SET) {
+  if (generated.questions.length < QUESTIONS_PER_SET) {
     throw new DefenseError("INVALID_OUTPUT", 502, "The questions couldn't be generated properly. Please try again.");
   }
 
@@ -142,7 +109,7 @@ export async function generateDefenseQuestions(
       source_title: title ?? null,
       overall_weaknesses: generated.overallWeaknesses,
       questions,
-      model: DEFENSE_MODEL,
+      model: GROQ_MODEL,
     })
     .select("id, created_at")
     .single<{ id: string; created_at: string }>();

@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+/* Warm editorial palette */
+@theme {
+  --color-cream: #faf6ef;
+  --color-cream-deep: #f1e8da;
+  --color-sand: #e4d7c3;
+  --color-terracotta: #b85c38;
+  --color-terracotta-deep: #9a4a2c;
+  --color-charcoal: #292524;
+  --color-stone: #6b625b;
+
+  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  background-color: var(--color-cream);
+  color: var(--color-charcoal);
+}

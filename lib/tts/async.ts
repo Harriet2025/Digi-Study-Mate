@@ -7,8 +7,21 @@ export interface RetryOptions {
   signal?: AbortSignal;
 }
 
+/** Any error that says whether it is worth retrying (TtsError, or other HTTP-backed errors). */
+interface RetryableError {
+  retryable: boolean;
+  retryAfterMs?: number;
+}
+
+function isRetryable(err: unknown): err is RetryableError {
+  return (
+    (err instanceof TtsError || (typeof err === "object" && err !== null && "retryable" in err)) &&
+    (err as RetryableError).retryable === true
+  );
+}
+
 /**
- * Retries retryable TtsErrors (429 / 5xx / network) with exponential backoff
+ * Retries retryable errors (429 / 5xx / network) with exponential backoff
  * and jitter, honouring the provider's Retry-After header when present.
  */
 export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
@@ -18,8 +31,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
     try {
       return await fn();
     } catch (err) {
-      const retryable = err instanceof TtsError && err.retryable;
-      if (!retryable || attempt >= maxAttempts || signal?.aborted) throw err;
+      if (!isRetryable(err) || attempt >= maxAttempts || signal?.aborted) throw err;
 
       const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
       const jittered = backoff / 2 + Math.random() * (backoff / 2);

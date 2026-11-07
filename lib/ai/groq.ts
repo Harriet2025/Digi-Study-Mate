@@ -21,6 +21,7 @@ const REQUEST_TIMEOUT_MS = 120_000;
 export type GroqErrorKind =
   | "CONFIGURATION" // missing API key
   | "RATE_LIMITED" // 429 after retries
+  | "TOO_LARGE" // 413: request exceeds the plan's tokens-per-minute limit
   | "TRUNCATED" // hit max_completion_tokens
   | "INVALID_OUTPUT" // response didn't match the schema
   | "UPSTREAM"; // other API / network failure
@@ -61,7 +62,8 @@ function withTimeout(signal?: AbortSignal): AbortSignal {
 async function errorFromResponse(res: Response): Promise<GroqError> {
   const body = await res.text().catch(() => "");
   const retryAfter = Number(res.headers.get("retry-after"));
-  return new GroqError(res.status === 429 ? "RATE_LIMITED" : "UPSTREAM", `Groq ${res.status}: ${body.slice(0, 500)}`, {
+  const kind: GroqErrorKind = res.status === 429 ? "RATE_LIMITED" : res.status === 413 ? "TOO_LARGE" : "UPSTREAM";
+  return new GroqError(kind, `Groq ${res.status}: ${body.slice(0, 500)}`, {
     status: res.status,
     retryable: res.status === 429 || res.status >= 500,
     retryAfterMs: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : undefined,

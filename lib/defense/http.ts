@@ -22,6 +22,8 @@ export function defenseErrorResponse(err: unknown, route: string): NextResponse<
         return json(500, "CONFIGURATION_ERROR", "AI features aren't set up on this server yet.");
       case "RATE_LIMITED":
         return json(429, "BUSY", "The examiner is busy right now. Try again in a moment.");
+      case "TOO_LARGE":
+        return json(413, "INPUT_TOO_LARGE", "This material is too long to process in one go. Try a single chapter or fewer slides.");
       case "TRUNCATED":
         return json(502, "TRUNCATED", "The response was cut off. Please try again.");
       case "INVALID_OUTPUT":

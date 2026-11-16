@@ -7,14 +7,49 @@
   --color-sand: #e4d7c3;
   --color-terracotta: #b85c38;
   --color-terracotta-deep: #9a4a2c;
+  --color-terracotta-soft: #f3dccf;
   --color-charcoal: #292524;
   --color-stone: #6b625b;
+  --color-sage: #6f8a6a;
+  --color-sage-soft: #e3eadf;
 
   --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Audio waveform bars on the homepage */
+  --animate-wave: wave 1.1s ease-in-out infinite;
+  @keyframes wave {
+    0%,
+    100% {
+      transform: scaleY(0.35);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  /* Gentle float for the hero card */
+  --animate-float: float 7s ease-in-out infinite;
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
 }
 
 html {
   background-color: var(--color-cream);
   color: var(--color-charcoal);
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem; /* keep anchored sections clear of the sticky header */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }

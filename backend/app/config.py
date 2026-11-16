@@ -46,7 +46,8 @@ class Settings(BaseSettings):
     media_dir: Path = BACKEND_DIR / "media"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
-    def sqlalchemy_url(self) -> URL | str:
+    def sqlalchemy_url(self, *, with_database: bool = True) -> URL | str:
+        """Connection URL. with_database=False connects to the server only (used to create the database)."""
         if self.database_url:
             return self.database_url
         # URL.create escapes special characters in the password safely.
@@ -56,7 +57,7 @@ class Settings(BaseSettings):
             password=self.mysql_password or None,
             host=self.mysql_host,
             port=self.mysql_port,
-            database=self.mysql_database,
+            database=self.mysql_database if with_database else None,
             query={"charset": "utf8mb4"},
         )
 

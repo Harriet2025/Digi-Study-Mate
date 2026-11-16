@@ -43,8 +43,19 @@ def _post(path: str, **kwargs: Any) -> httpx.Response:
     logger.warning("%s", detail)
     retry_after = _float(response.headers.get("retry-after"))
     if status == 413:
-        # Request exceeds the plan's tokens-per-minute limit (free tier: 8,000).
-        raise AppError("INPUT_TOO_LARGE", 413, "This material is too long to process in one go. Try a single chapter or fewer pages.", detail=detail)
+        # Over the plan's tokens-per-minute budget (free tier: 8,000). Usually the budget was used up by a
+        # previous request in the last minute, so wait and retry; _chat then tries a smaller allowance.
+        raise AppError(
+            "INPUT_TOO_LARGE",
+            429,
+            "The AI's free-tier limit was reached. Wait a minute and try again, or choose fewer pages.",
+            retryable=True,
+            retry_after=retry_after or 30.0,
+            detail=detail,
+        )
+    if status == 400 and "json_validate_failed" in response.text:
+        # The model occasionally fails to produce schema-valid JSON; a fresh attempt usually succeeds.
+        raise AppError("INVALID_OUTPUT", 502, "The AI's response was incomplete. Please try again.", retryable=True, detail=detail)
     if status == 429:
         raise AppError("BUSY", 429, "The AI is busy right now. Try again in a moment.", retryable=True, retry_after=retry_after, detail=detail)
     raise AppError("AI_FAILED", 502, "The AI service couldn't respond. Please try again.", retryable=status >= 500, detail=detail)
@@ -78,37 +89,37 @@ def _strict_schema(model: type[BaseModel]) -> dict[str, Any]:
 MIN_COMPLETION_TOKENS = 1_500
 
 
-def _completion_budget(system: str, user: str, wanted: int) -> int:
-    """Groq counts input + max_completion_tokens against the plan's tokens-per-minute limit for every
-    request (free tier: 8,000), so shrink the allowance to fit. GROQ_TPM_LIMIT=0 means no limit."""
+def _fitted_budget(input_chars: int, wanted: int) -> int | None:
+    """An output allowance that fits the plan's tokens-per-minute limit (GROQ_TPM_LIMIT; free tier 8,000),
+    or None if there's no limit or no room. Measured: ~4.9 characters per token for these prompts."""
     limit = get_settings().groq_tpm_limit
     if not limit:
-        return wanted
-    # ~3.5 characters per token, plus a margin for message formatting and the JSON schema.
-    input_tokens = (len(system) + len(user)) / 3.5 + 300
-    available = int(limit - input_tokens)
-    if available < MIN_COMPLETION_TOKENS:
-        raise AppError(
-            "INPUT_TOO_LARGE",
-            413,
-            "This material is too long to process in one go. Try a single chapter or fewer pages.",
-            detail=f"~{int(input_tokens)} input tokens leaves {available} of the {limit}-token limit",
-        )
-    return min(wanted, available)
+        return None
+    available = int(limit - input_chars / 4.5 - 200)
+    return min(wanted, available) if available >= MIN_COMPLETION_TOKENS else None
 
 
 def _chat(system: str, user: str, *, max_tokens: int, effort: str, response_format: dict | None = None) -> str:
-    schema_chars = len(json.dumps(response_format)) if response_format else 0
     body: dict[str, Any] = {
         "model": get_settings().groq_model,
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-        "max_completion_tokens": _completion_budget(system, user + " " * schema_chars, max_tokens),
+        "max_completion_tokens": max_tokens,
         "reasoning_effort": effort,
     }
     if response_format:
         body["response_format"] = response_format
 
-    data = with_retry(lambda: _post("/chat/completions", json=body)).json()
+    try:
+        data = with_retry(lambda: _post("/chat/completions", json=body)).json()
+    except AppError as err:
+        # Groq sometimes counts the whole output allowance against the per-minute limit and rejects
+        # the request as too large. Retry once with an allowance that fits, if there's room for one.
+        input_chars = len(system) + len(user) + (len(json.dumps(response_format)) if response_format else 0)
+        fitted = _fitted_budget(input_chars, max_tokens)
+        if err.code != "INPUT_TOO_LARGE" or fitted is None or fitted >= max_tokens:
+            raise
+        body["max_completion_tokens"] = fitted
+        data = with_retry(lambda: _post("/chat/completions", json=body)).json()
     choice = (data.get("choices") or [None])[0]
     if not choice:
         raise AppError("INVALID_OUTPUT", 502, "The AI returned an empty response. Please try again.")

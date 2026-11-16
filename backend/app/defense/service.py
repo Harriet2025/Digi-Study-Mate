@@ -109,14 +109,15 @@ def generate_question_set(
     if len(material) > MAX_INPUT_CHARS:
         raise AppError("INPUT_TOO_LARGE", 413, "This material is too long. Try a single chapter or slide deck.")
 
-    # High reasoning effort: finding real weak points is the hard part of this task.
+    # Medium reasoning effort: "high" finds slightly sharper weak points but uses ~14k tokens, more than
+    # Groq's free tier allows per minute. Raise it if you upgrade (see GROQ_TPM_LIMIT).
     generated = groq_json(
         QUESTION_GENERATION_SYSTEM_PROMPT,
         build_question_generation_message(material, title),
         GenQuestionSet,
         name="defense_question_set",
         max_tokens=32_000,
-        effort="high",
+        effort="medium",
     )
     if len(generated.questions) < QUESTIONS_PER_SET or any(not q.rubric.keyPoints for q in generated.questions):
         raise AppError("INVALID_OUTPUT", 502, "The questions couldn't be generated properly. Please try again.")

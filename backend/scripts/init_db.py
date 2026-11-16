@@ -41,7 +41,7 @@ def create_database_and_tables() -> None:
     else:
         url = settings.sqlalchemy_url()
         # Connect without a database first so we can create it.
-        server = create_engine(url.set(database=None))
+        server = create_engine(settings.sqlalchemy_url(with_database=False))
         with server.connect() as conn:
             conn.execute(
                 text(f"CREATE DATABASE IF NOT EXISTS `{settings.mysql_database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")

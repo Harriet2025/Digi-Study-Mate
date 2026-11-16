@@ -1,0 +1,26 @@
+# Web framework
+fastapi>=0.115
+uvicorn[standard]>=0.32
+python-multipart>=0.0.12
+
+# Config & validation
+pydantic>=2.9
+pydantic-settings>=2.6
+
+# MySQL
+sqlalchemy>=2.0.36
+pymysql>=1.1
+cryptography>=43  # needed by PyMySQL for MySQL 8 default auth (caching_sha2_password)
+
+# HTTP client for Groq and ElevenLabs
+httpx>=0.27
+
+# Document parsing
+pymupdf>=1.24      # PDF text with layout (note: AGPL licence)
+python-pptx>=1.0
+
+# MP3 duration
+mutagen>=1.47
+
+# Tests
+pytest>=8.3

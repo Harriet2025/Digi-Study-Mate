@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AudioManifest, AudioSegment } from "@/lib/tts/types";
+import type { AudioManifest, AudioSegment } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Constants & types

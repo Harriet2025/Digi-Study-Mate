@@ -1,5 +1,4 @@
-import type { ScriptLine } from "@/lib/ai/generateScript";
-import type { AudioManifest, AudioSegment } from "@/lib/tts/types";
+import type { AudioManifest, AudioSegment, ScriptLine } from "@/lib/types";
 
 /**
  * A sample episode for trying the player without any API keys.

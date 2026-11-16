@@ -1,5 +1,21 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {};
+/** The Python FastAPI backend (backend/). Start it with `npm run dev:backend`. */
+const BACKEND_URL = process.env.BACKEND_URL || "http://127.0.0.1:8010";
+
+const nextConfig: NextConfig = {
+  experimental: {
+    // Generating an episode or defense questions can take over a minute; the default proxy timeout is 30s.
+    proxyTimeout: 180_000,
+  },
+  // Forward API calls and generated audio to the Python backend, so the browser
+  // only ever talks to this app (no CORS, same URLs in development and production).
+  async rewrites() {
+    return [
+      { source: "/api/:path*", destination: `${BACKEND_URL}/api/:path*` },
+      { source: "/media/:path*", destination: `${BACKEND_URL}/media/:path*` },
+    ];
+  },
+};
 
 export default nextConfig;

@@ -4,3 +4,10 @@ node_modules
 !.env.example
 *.tsbuildinfo
 next-env.d.ts
+
+# Python backend
+backend/.venv/
+backend/media/
+backend/.env
+__pycache__/
+.pytest_cache/

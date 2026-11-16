@@ -1,0 +1,66 @@
+"""App settings, read from the project's .env.local (shared with the Next.js app) and backend/.env."""
+
+from functools import lru_cache
+from pathlib import Path
+
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL
+
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DIR = BACKEND_DIR.parent
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        # Later files override earlier ones. Unknown keys (e.g. Next.js-only ones) are ignored.
+        env_file=(PROJECT_DIR / ".env.local", BACKEND_DIR / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # --- MySQL ---------------------------------------------------------------
+    mysql_host: str = "127.0.0.1"
+    mysql_port: int = 3306
+    mysql_user: str = "root"
+    mysql_password: str = ""
+    mysql_database: str = "study_mate"
+    #: Full SQLAlchemy URL; overrides the MYSQL_* settings when set (tests use SQLite).
+    database_url: str | None = None
+
+    # --- Groq (all AI text + speech-to-text) ---------------------------------
+    groq_api_key: str = ""
+    groq_model: str = "openai/gpt-oss-120b"
+    groq_whisper_model: str = "whisper-large-v3-turbo"
+    #: Your Groq plan's tokens-per-minute limit for the model (free tier: 8000). 0 = don't limit requests.
+    groq_tpm_limit: int = 8_000
+
+    # --- ElevenLabs (voices) -------------------------------------------------
+    elevenlabs_api_key: str = ""
+    elevenlabs_model_id: str = "eleven_multilingual_v2"
+    elevenlabs_voice_alex: str = "JBFqnCBsd6RMkjVDRZzb"  # "George": warm, mature narrator
+    elevenlabs_voice_sam: str = "TX3LPaxmHKxFdv7VOQHJ"  # "Liam": young, energetic
+    tts_concurrency: int = Field(default=2, ge=1, le=20)
+
+    # --- Files & web ---------------------------------------------------------
+    media_dir: Path = BACKEND_DIR / "media"
+    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+
+    def sqlalchemy_url(self) -> URL | str:
+        if self.database_url:
+            return self.database_url
+        # URL.create escapes special characters in the password safely.
+        return URL.create(
+            "mysql+pymysql",
+            username=self.mysql_user,
+            password=self.mysql_password or None,
+            host=self.mysql_host,
+            port=self.mysql_port,
+            database=self.mysql_database,
+            query={"charset": "utf8mb4"},
+        )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

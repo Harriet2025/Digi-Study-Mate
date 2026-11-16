@@ -73,11 +73,19 @@ def _strict_schema(model: type[BaseModel]) -> dict[str, Any]:
 
     def clean(node: Any) -> Any:
         if isinstance(node, dict):
-            node = {k: clean(v) for k, v in node.items() if k not in ("title", "default")}
-            if node.get("type") == "object":
-                node["additionalProperties"] = False
-                node["required"] = list(node.get("properties", {}).keys())
-            return node
+            # Drop pydantic's "title"/"default" annotations, but keep fields that happen to be named "title".
+            out = {}
+            for key, value in node.items():
+                if key in ("title", "default"):
+                    continue
+                if key in ("properties", "$defs") and isinstance(value, dict):
+                    out[key] = {name: clean(schema) for name, schema in value.items()}
+                else:
+                    out[key] = clean(value)
+            if out.get("type") == "object":
+                out["additionalProperties"] = False
+                out["required"] = list(out.get("properties", {}).keys())
+            return out
         if isinstance(node, list):
             return [clean(v) for v in node]
         return node

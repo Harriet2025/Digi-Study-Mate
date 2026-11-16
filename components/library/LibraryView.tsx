@@ -10,6 +10,7 @@ import {
   styleLabel,
   timeAgo,
   type EpisodeSummary,
+  type GuideSummary,
   type LibraryData,
   type QuestionSetSummary,
 } from "@/lib/api";
@@ -33,7 +34,11 @@ export default function LibraryView() {
   }, [load]);
 
   // While any lesson is still being made, refresh every few seconds.
-  const building = data?.documents.some((d) => d.episodes.some((e) => e.status === "queued" || e.status === "processing"));
+  const building = data?.documents.some(
+    (d) =>
+      d.episodes.some((e) => e.status === "queued" || e.status === "processing") ||
+      d.guides.some((g) => g.status === "queued" || g.status === "processing"),
+  );
   useEffect(() => {
     if (!building) return;
     const timer = window.setInterval(load, 4000);
@@ -62,7 +67,7 @@ export default function LibraryView() {
       {/* Quick stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard label="Documents" value={data.documents.length} />
-        <StatCard label="Lessons" value={data.documents.reduce((n, d) => n + d.episodes.filter((e) => e.status === "ready").length, 0)} />
+        <StatCard label="Study spaces" value={data.documents.reduce((n, d) => n + d.guides.filter((g) => g.status === "ready").length, 0)} />
         <Link href="/flashcards" className="group rounded-3xl bg-terracotta p-5 text-white transition hover:bg-terracotta-deep">
           <p className="text-sm text-white/80">Flashcards due</p>
           <p className="mt-1 flex items-baseline justify-between font-serif text-4xl font-semibold">
@@ -151,7 +156,7 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
         </div>
         <div className="flex flex-wrap gap-2">
           <LinkButton href={`/upload?documentId=${doc.documentId}`} className="px-4 py-2">
-            + New lesson
+            + New study space
           </LinkButton>
           <LinkButton href={`/practice?documentId=${doc.documentId}`} variant="secondary" className="px-4 py-2">
             Practise questions
@@ -168,11 +173,22 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
         </div>
       )}
 
+      {doc.guides.length > 0 && (
+        <div className="border-b border-sand p-5 sm:p-6">
+          <p className="text-xs font-semibold tracking-[0.14em] text-stone uppercase">Study spaces</p>
+          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+            {doc.guides.map((g) => (
+              <GuideCard key={g.guideId} guide={g} onChanged={onChanged} />
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-stone uppercase">Lessons</p>
+          <p className="text-xs font-semibold tracking-[0.14em] text-stone uppercase">Audio lessons</p>
           {doc.episodes.length === 0 ? (
-            <p className="mt-3 text-sm text-stone">No lessons yet. Create one to start listening.</p>
+            <p className="mt-3 text-sm text-stone">No audio lessons yet. Add one from a study space&apos;s Listen tab.</p>
           ) : (
             <ul className="mt-3 space-y-2">
               {doc.episodes.map((e) => (
@@ -195,6 +211,67 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
         </div>
       </div>
     </Card>
+  );
+}
+
+function GuideCard({ guide: g, onChanged }: { guide: GuideSummary; onChanged: () => void }) {
+  const building = g.status === "queued" || g.status === "processing";
+  const remove = async () => {
+    if (!window.confirm(`Delete the study space "${g.title}" with its flashcards, quiz results and chat? This can't be undone.`)) return;
+    try {
+      await api.deleteGuide(g.guideId);
+      onChanged();
+    } catch (err) {
+      window.alert(err instanceof ApiError ? err.message : "Couldn't delete this study space.");
+    }
+  };
+  return (
+    <li className="group relative rounded-2xl border border-sand bg-cream p-4 transition hover:border-terracotta/40 hover:shadow-md">
+      <Link href={`/study/${g.guideId}`} className="block">
+        <div className="flex items-start gap-3">
+          <span
+            className={`grid size-11 shrink-0 place-items-center rounded-2xl text-lg ${
+              g.status === "failed" ? "bg-terracotta-soft text-terracotta-deep" : building ? "bg-cream-deep text-terracotta" : "bg-terracotta text-white"
+            }`}
+            aria-hidden="true"
+          >
+            {building ? <Spinner className="size-5" /> : g.status === "failed" ? "!" : "📖"}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="line-clamp-2 font-serif text-lg leading-snug font-semibold">{g.title}</span>
+            <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-stone">
+              {building ? (
+                <span className="text-terracotta-deep">
+                  {g.stageLabel}… {g.progress}%
+                </span>
+              ) : g.status === "failed" ? (
+                <span className="text-terracotta-deep">Couldn&apos;t be made</span>
+              ) : (
+                <>
+                  <span>{g.sectionCount} steps</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{g.flashcardCount} cards</span>
+                  {g.pageStart && <span>· pp. {g.pageStart}–{g.pageEnd}</span>}
+                  {g.bestQuizScore !== null && <Pill tone={g.bestQuizScore >= 75 ? "sage" : "terracotta"}>Quiz {g.bestQuizScore}%</Pill>}
+                </>
+              )}
+            </span>
+          </span>
+        </div>
+      </Link>
+      {!building && (
+        <button
+          type="button"
+          onClick={remove}
+          aria-label={`Delete study space ${g.title}`}
+          className="absolute top-3 right-3 rounded-full p-1.5 text-stone opacity-0 transition group-hover:opacity-100 hover:bg-terracotta-soft hover:text-terracotta-deep focus-visible:opacity-100"
+        >
+          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+          </svg>
+        </button>
+      )}
+    </li>
   );
 }
 

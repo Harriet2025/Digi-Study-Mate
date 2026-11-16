@@ -237,3 +237,14 @@ def test_project_validation(client):
     r = client.post("/api/projects", data={"title": "x", "instructions": "y" * 11_000, "slideCount": "9"},
                     files={"brief": ("brief.txt", b"z" * 9_000, "text/plain")})
     assert r.status_code == 413
+
+
+def test_strict_schema_keeps_fields_named_title():
+    """Regression: removing pydantic's "title" annotations must not remove real fields called "title"."""
+    from app.ai.groq import _strict_schema
+    from app.guides.service import _Lesson
+
+    schema = _strict_schema(_Lesson)
+    assert "title" in schema["properties"] and "title" in schema["required"]
+    section = schema["$defs"]["_Section"]
+    assert "title" in section["properties"] and section["additionalProperties"] is False

@@ -53,3 +53,85 @@ html {
     scroll-behavior: auto;
   }
 }
+
+/* Readable typography for lessons and tutor answers (components/study/Markdown.tsx) */
+.study-prose {
+  line-height: 1.75;
+}
+.study-prose > * + * {
+  margin-top: 0.9em;
+}
+.study-prose strong {
+  font-weight: 650;
+  color: var(--color-charcoal);
+}
+.study-prose ul,
+.study-prose ol {
+  padding-left: 1.35em;
+}
+.study-prose ul {
+  list-style: disc;
+}
+.study-prose ol {
+  list-style: decimal;
+}
+.study-prose li + li {
+  margin-top: 0.35em;
+}
+.study-prose li::marker {
+  color: var(--color-terracotta);
+}
+.study-prose h1,
+.study-prose h2,
+.study-prose h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.25;
+}
+.study-prose h2 {
+  font-size: 1.35em;
+}
+.study-prose h3 {
+  font-size: 1.15em;
+}
+.study-prose a {
+  color: var(--color-terracotta-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.study-prose code {
+  border-radius: 0.4em;
+  background: var(--color-cream-deep);
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+.study-prose pre {
+  overflow-x: auto;
+  border-radius: 1rem;
+  background: var(--color-charcoal);
+  color: var(--color-cream);
+  padding: 1rem;
+}
+.study-prose pre code {
+  background: transparent;
+  padding: 0;
+}
+.study-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+.study-prose th,
+.study-prose td {
+  border: 1px solid var(--color-sand);
+  padding: 0.45em 0.7em;
+  text-align: left;
+}
+.study-prose th {
+  background: var(--color-cream-deep);
+}
+.study-prose blockquote {
+  border-left: 3px solid var(--color-terracotta);
+  padding-left: 1em;
+  color: var(--color-stone);
+}

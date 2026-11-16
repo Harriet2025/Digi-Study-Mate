@@ -28,7 +28,7 @@ export default function SiteHeader() {
             href="/upload"
             className="hidden items-center gap-1.5 rounded-full bg-terracotta px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-terracotta-deep focus-visible:ring-2 focus-visible:ring-charcoal focus-visible:ring-offset-2 focus-visible:ring-offset-cream focus-visible:outline-none sm:inline-flex"
           >
-            <span aria-hidden="true" className="text-base leading-none">+</span> New lesson
+            <span aria-hidden="true" className="text-base leading-none">+</span> Study notes
           </Link>
           <MobileNav />
         </div>

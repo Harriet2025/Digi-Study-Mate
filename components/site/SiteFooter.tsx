@@ -8,8 +8,8 @@ export default function SiteFooter() {
         <div className="max-w-sm">
           <Logo />
           <p className="mt-3 text-sm leading-relaxed text-stone">
-            Turn lecture slides and notes into a conversation you can listen to, then rehearse the questions your
-            examiners will actually ask.
+            Turn lecture slides into lessons you understand, with diagrams, a tutor, flashcards, quizzes and audio, and get
+            ready for every presentation and defense.
           </p>
         </div>
         <nav aria-label="Footer" className="grid grid-cols-2 gap-x-12 gap-y-2 text-sm sm:gap-x-16">
@@ -17,12 +17,13 @@ export default function SiteFooter() {
           <Link href="/#how-it-works" className="text-stone hover:text-charcoal">How it works</Link>
           <Link href="/#features" className="text-stone hover:text-charcoal">Features</Link>
           <Link href="/#defense" className="text-stone hover:text-charcoal">Defense prep</Link>
+          <Link href="/projects" className="text-stone hover:text-charcoal">Projects</Link>
           <Link href="/listen/demo" className="text-stone hover:text-charcoal">Demo episode</Link>
         </nav>
       </div>
       <div className="border-t border-sand/70">
         <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-stone sm:px-6">
-          © {new Date().getFullYear()} Study Mate. Made for students who learn better by listening.
+          © {new Date().getFullYear()} Study Mate. Made for students who want to actually understand.
         </p>
       </div>
     </footer>

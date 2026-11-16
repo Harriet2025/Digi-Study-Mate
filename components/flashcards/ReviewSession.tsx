@@ -12,7 +12,16 @@ const RATING_BUTTONS: { rating: Rating; label: string; key: string; style: strin
   { rating: "easy", label: "Easy", key: "4", style: "border-sage hover:bg-sage-soft" },
 ];
 
-export default function ReviewSession({ episodeId }: { episodeId?: string }) {
+export default function ReviewSession({
+  episodeId,
+  guideId,
+  embedded = false,
+}: {
+  episodeId?: string;
+  guideId?: string;
+  /** Inside a study space tab: no page heading. */
+  embedded?: boolean;
+}) {
   const [cards, setCards] = useState<Flashcard[] | null>(null);
   const [stats, setStats] = useState<DeckStats | null>(null);
   const [index, setIndex] = useState(0);
@@ -26,7 +35,7 @@ export default function ReviewSession({ episodeId }: { episodeId?: string }) {
     async (due = true) => {
       setError(null);
       try {
-        const data = await api.flashcards({ episodeId, due, limit: 50 });
+        const data = await api.flashcards({ episodeId, guideId, due, limit: 50 });
         setCards(data.cards);
         setStats(data.stats);
         setIndex(0);
@@ -37,7 +46,7 @@ export default function ReviewSession({ episodeId }: { episodeId?: string }) {
         setError(err instanceof ApiError ? err.message : "Couldn't load your flashcards.");
       }
     },
-    [episodeId],
+    [episodeId, guideId],
   );
 
   useEffect(() => {
@@ -84,7 +93,8 @@ export default function ReviewSession({ episodeId }: { episodeId?: string }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [card, flipped, rate]);
 
-  const header = (
+  const scoped = Boolean(episodeId || guideId);
+  const header = embedded ? null : (
     <div className="mb-8">
       {episodeId && (
         <Link href={`/listen/${episodeId}`} className="mb-4 inline-block text-sm font-medium text-stone hover:text-charcoal">
@@ -93,9 +103,9 @@ export default function ReviewSession({ episodeId }: { episodeId?: string }) {
       )}
       <PageHeader
         eyebrow={cramMode ? "Practice round" : "Spaced repetition"}
-        title={episodeId && lessonTitle ? lessonTitle : "Flashcards"}
+        title={scoped && lessonTitle ? lessonTitle : "Flashcards"}
         description={
-          episodeId
+          scoped
             ? "Cards from this lesson. Rate each one honestly and Study Mate will decide when you see it again."
             : "Cards from all your lessons that are due today. The ones you find hard come back sooner."
         }

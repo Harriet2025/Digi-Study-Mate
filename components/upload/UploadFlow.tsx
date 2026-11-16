@@ -95,7 +95,7 @@ export default function UploadFlow({ initialDocumentId }: { initialDocumentId?: 
 }
 
 function Stepper({ current }: { current: 1 | 2 }) {
-  const steps = ["Upload", "Choose your lesson", "Listen"];
+  const steps = ["Upload", "Set up your lesson", "Study"];
   return (
     <ol className="flex items-center gap-2 text-sm" aria-label="Progress">
       {steps.map((label, i) => {
@@ -189,6 +189,7 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
   const [style, setStyle] = useState<LessonStyle>("standard");
   const [level, setLevel] = useState<LessonLevel>("intermediate");
   const [language, setLanguage] = useState<LessonLanguage>("en");
+  const [withAudio, setWithAudio] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -201,17 +202,31 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
     setSubmitting(true);
     setError(null);
     try {
-      const episode = await api.createEpisode({
+      const guide = await api.createGuide({
         documentId: doc.documentId,
         pageStart,
         pageEnd,
-        targetMinutes: minutes,
         title: title.trim() || undefined,
-        style,
         level,
         language,
       });
-      router.push(`/listen/${episode.scriptId}`);
+      if (withAudio) {
+        // The audio version is made alongside and appears in the study space's Listen tab.
+        await api
+          .createEpisode({
+            documentId: doc.documentId,
+            pageStart,
+            pageEnd,
+            targetMinutes: minutes,
+            title: title.trim() || undefined,
+            style,
+            level,
+            language,
+            guideId: guide.guideId,
+          })
+          .catch(() => undefined); // the study space still works without it
+      }
+      router.push(`/study/${guide.guideId}`);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Couldn't start the lesson. Please try again.");
       setSubmitting(false);
@@ -267,8 +282,6 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
           )}
         </fieldset>
 
-        <ChoiceGroup label="Length" value={minutes} onChange={setMinutes} options={LENGTHS} />
-        <ChoiceGroup label="Lesson style" value={style} onChange={setStyle} options={STYLE_OPTIONS} />
         <ChoiceGroup label="Your level" value={level} onChange={setLevel} options={LEVEL_OPTIONS} columns={3} />
 
         <div>
@@ -287,8 +300,40 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
               </option>
             ))}
           </select>
-          <p className="mt-1.5 text-xs text-stone">Alex & Sam can teach in another language, even if your notes are in English.</p>
+          <p className="mt-1.5 text-xs text-stone">Your lesson can be in another language, even if your notes are in English.</p>
         </div>
+      </Card>
+
+      <Card className="space-y-5 bg-cream-deep/50">
+        <p className="text-sm font-semibold">You&apos;ll get</p>
+        <ul className="grid gap-2 text-sm sm:grid-cols-2">
+          {[
+            ["📖", "A step-by-step lesson in simple language"],
+            ["🧭", "Diagrams, analogies and worked examples"],
+            ["💬", "A tutor to answer your questions"],
+            ["🗂️", "Flashcards with spaced repetition"],
+            ["✅", "A final quiz that rates you"],
+            ["🎬", "Videos and reading to go further"],
+          ].map(([icon, text]) => (
+            <li key={text} className="flex gap-2">
+              <span aria-hidden="true">{icon}</span>
+              {text}
+            </li>
+          ))}
+        </ul>
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-sand bg-cream px-4 py-3">
+          <input type="checkbox" checked={withAudio} onChange={(e) => setWithAudio(e.target.checked)} className="mt-1 size-4 accent-terracotta" />
+          <span>
+            <span className="block font-semibold">Also make an audio version with Alex &amp; Sam</span>
+            <span className="block text-sm text-stone">A podcast-style lesson for listening on the go. Uses ElevenLabs voice credit.</span>
+          </span>
+        </label>
+        {withAudio && (
+          <div className="space-y-5">
+            <ChoiceGroup label="Audio length" value={minutes} onChange={setMinutes} options={LENGTHS} />
+            <ChoiceGroup label="Audio style" value={style} onChange={setStyle} options={STYLE_OPTIONS} />
+          </div>
+        )}
       </Card>
 
       {error && <ErrorNote>{error}</ErrorNote>}
@@ -301,8 +346,8 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
           Practise defense questions on these {unit}s instead
         </Link>
         <Button type="submit" disabled={submitting || !rangeValid} className="px-7 py-3 text-base">
-          {submitting ? <Spinner className="size-4" /> : Icons.headphones}
-          {submitting ? "Starting…" : "Create my lesson"}
+          {submitting ? <Spinner className="size-4" /> : <span aria-hidden="true">✨</span>}
+          {submitting ? "Starting…" : "Create my study space"}
         </Button>
       </div>
     </form>

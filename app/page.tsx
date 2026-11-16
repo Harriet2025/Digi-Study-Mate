@@ -81,22 +81,22 @@ function Hero() {
         <div>
           <span className="inline-flex items-center gap-2 rounded-full border border-sand bg-cream/80 px-3 py-1 text-xs font-medium text-stone">
             <span className="size-1.5 rounded-full bg-sage" aria-hidden="true" />
-            Audio-first studying for university students
+            Your AI study partner for university
           </span>
           <h1 className="mt-6 font-serif text-[2.6rem] leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
             Your lecture notes,{" "}
             <span className="relative whitespace-nowrap text-terracotta">
-              <span className="relative z-10">talked through</span>
+              <span className="relative z-10">finally clear</span>
               <svg aria-hidden="true" viewBox="0 0 300 18" className="absolute -bottom-2 left-0 h-3 w-full text-terracotta/35" preserveAspectRatio="none">
                 <path d="M3 12 C 80 2, 200 2, 297 10" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
               </svg>
             </span>{" "}
-            like a podcast.
+            and exam-ready.
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-stone">
-            Upload your slides or notes. Alex, a friendly tutor, and Sam, a curious classmate, turn them into a conversation
-            you can listen to on the bus, at the gym or the night before the exam. They pause to quiz you, and you can
-            interrupt to ask anything.
+            Upload your slides and get taken through them step by step, in simple language, with diagrams, a tutor you can
+            ask anything, flashcards, a quiz that rates you and videos to go further. Prefer to listen? Turn any lesson into a
+            podcast. Got a presentation to give? We&apos;ll build the PowerPoint and coach your defense.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <Link
@@ -112,9 +112,9 @@ function Hero() {
           </div>
           <dl className="mt-12 grid max-w-md grid-cols-3 gap-6 border-t border-sand pt-6">
             {[
-              ["PDF & PPTX", "slides and notes"],
-              ["2 hosts", "tutor + student"],
-              ["Quiz pauses", "built into every lesson"],
+              ["Read, see, hear", "text, diagrams and audio"],
+              ["Ask anything", "answers from your notes"],
+              ["Rated quizzes", "know when you're ready"],
             ].map(([value, label]) => (
               <div key={value}>
                 <dt className="font-serif text-lg font-semibold">{value}</dt>
@@ -228,8 +228,8 @@ function HowItWorks() {
       ),
     },
     {
-      title: "Listen to Alex & Sam",
-      body: "Pick the pages and a length. The hosts explain each idea in plain language with everyday analogies, then the precise terms.",
+      title: "Learn it your way",
+      body: "A step-by-step lesson with analogies, worked examples and diagrams. Ask the tutor whenever you're stuck, read it, or listen to Alex & Sam.",
       icon: (
         <path d="M4 14v-2a8 8 0 0 1 16 0v2M4 14a2 2 0 0 1 2-2h1v7H6a2 2 0 0 1-2-2v-3Zm16 0a2 2 0 0 0-2-2h-1v7h1a2 2 0 0 0 2-2v-3Z" />
       ),
@@ -246,7 +246,7 @@ function HowItWorks() {
       <div className="max-w-2xl">
         <Eyebrow>How it works</Eyebrow>
         <h2 className="mt-3 font-serif text-4xl leading-tight font-semibold text-balance">
-          From a 90-page PDF to something you actually want to listen to.
+          From a 90-page PDF to something you actually understand.
         </h2>
       </div>
       <ol className="mt-14 grid gap-6 md:grid-cols-3">
@@ -488,6 +488,53 @@ function DefensePrep() {
   );
 }
 
+function ProjectsShowcase() {
+  return (
+    <section id="projects" className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
+      <div className="grid items-center gap-12 lg:grid-cols-2">
+        <div aria-hidden="true" className="relative">
+          <div className="aspect-video rounded-2xl bg-charcoal p-[7%] text-cream shadow-[0_30px_80px_-30px_rgba(41,37,36,0.55)]">
+            <p className="text-[11px] font-bold tracking-wide text-terracotta-soft uppercase">BCP 202 · Database Design</p>
+            <span className="mt-3 block h-1.5 w-14 bg-terracotta" />
+            <p className="mt-4 font-serif text-3xl leading-tight font-semibold">DreamHome Rental Database Design</p>
+            <p className="mt-2 text-sm text-sand">ER model, normalisation and SQL</p>
+          </div>
+          <div className="absolute -right-3 -bottom-8 w-[62%] rotate-2 rounded-2xl border border-sand bg-cream p-4 shadow-xl">
+            <p className="text-[10px] font-bold tracking-wide text-terracotta-deep uppercase">Likely question</p>
+            <p className="mt-1 font-serif text-sm leading-snug">“Why did you choose surrogate keys over natural keys?”</p>
+            <p className="mt-2 rounded-lg bg-sage-soft px-2 py-1 text-[11px] text-sage">Model answer ready</p>
+          </div>
+        </div>
+        <div>
+          <Eyebrow>Projects &amp; presentations</Eyebrow>
+          <h2 className="mt-3 font-serif text-4xl leading-tight font-semibold text-balance">
+            Upload the brief. Walk in with slides, a script and answers.
+          </h2>
+          <ul className="mt-6 space-y-3 text-lg text-stone">
+            {[
+              "A designed PowerPoint that covers every marking criterion, with speaker notes",
+              "A presenter script for each slide, timed to your slot",
+              "The questions your lecturer is likely to ask, with model answers",
+              "Practice with a strict examiner who grades your answers",
+            ].map((item) => (
+              <li key={item} className="flex gap-3">
+                <span className="mt-1.5 grid size-5 shrink-0 place-items-center rounded-full bg-terracotta text-[11px] font-bold text-white">✓</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/projects"
+            className="mt-8 inline-flex items-center gap-2 rounded-full bg-charcoal px-6 py-3 font-medium text-cream transition hover:bg-charcoal/85"
+          >
+            Start a project →
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FAQ() {
   const faqs = [
     {
@@ -499,12 +546,12 @@ function FAQ() {
       a: "Your material is treated as the source of truth. Alex adds analogies and examples to explain it, but is told not to invent facts, figures or claims that aren't in your notes.",
     },
     {
-      q: "How long are the lessons?",
-      a: "You choose. A few minutes for a quick recap of a section, or longer for a whole chapter, with a quiz checkpoint roughly every three minutes.",
+      q: "Is it only audio?",
+      a: "No. Every upload becomes a study space: a step-by-step lesson you can read (with diagrams and examples), a tutor to chat with, flashcards, a rated quiz and extra resources. The Alex & Sam audio version is an optional extra for learning on the go.",
     },
     {
-      q: "Can I use it for my thesis or project defense?",
-      a: "Yes. Upload your presentation and the defense practice mode asks the questions a strict panel would, then grades your answers against a rubric.",
+      q: "Can it help with presentations and project defenses?",
+      a: "Yes. In Projects, upload the assignment brief and get a designed PowerPoint, a presenter script and likely lecturer questions with model answers, then practise with an examiner who grades you. You can also upload your own finished slides and practise defending them.",
     },
   ];
   return (
@@ -563,6 +610,7 @@ export default function Home() {
       <Features />
       <SampleConversation />
       <DefensePrep />
+      <ProjectsShowcase />
       <FAQ />
       <FinalCTA />
     </main>

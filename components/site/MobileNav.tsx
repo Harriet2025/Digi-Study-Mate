@@ -29,7 +29,7 @@ export default function MobileNav() {
       {open && (
         <nav id="mobile-nav" aria-label="Main" className="absolute inset-x-0 top-16 border-b border-sand bg-cream px-4 pt-2 pb-5 shadow-lg">
           <ul className="space-y-1">
-            {[{ href: "/upload", label: "New lesson" }, ...APP_NAV].map((item) => (
+            {[{ href: "/upload", label: "Study new notes" }, ...APP_NAV].map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}

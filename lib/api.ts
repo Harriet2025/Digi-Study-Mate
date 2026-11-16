@@ -64,7 +64,8 @@ export type Rating = "again" | "hard" | "good" | "easy";
 
 export interface Flashcard {
   id: number;
-  episodeId: string;
+  episodeId: string | null;
+  guideId: string | null;
   lessonTitle: string | null;
   front: string;
   back: string;
@@ -89,7 +90,7 @@ export interface QuestionSetSummary {
 export interface LibraryData {
   continueListening: EpisodeSummary[];
   flashcards: DeckStats;
-  documents: (UploadedDocument & { episodes: EpisodeSummary[]; questionSets: QuestionSetSummary[] })[];
+  documents: (UploadedDocument & { guides: GuideSummary[]; episodes: EpisodeSummary[]; questionSets: QuestionSetSummary[] })[];
   looseQuestionSets: QuestionSetSummary[];
 }
 
@@ -155,6 +156,147 @@ export interface Insights {
   };
 }
 
+
+// --- Study spaces ------------------------------------------------------------
+
+export interface GuideSummary {
+  guideId: string;
+  documentId: string;
+  title: string;
+  status: EpisodeStatus;
+  stage: string;
+  stageLabel: string;
+  progress: number;
+  error: string | null;
+  level: LessonLevel;
+  language: LessonLanguage;
+  pageStart: number | null;
+  pageEnd: number | null;
+  createdAt: string | null;
+  sectionCount: number;
+  flashcardCount: number;
+  quizQuestionCount: number;
+  bestQuizScore: number | null;
+}
+
+export interface GuideSection {
+  id: number;
+  position: number;
+  title: string;
+  explanation: string;
+  analogy: string | null;
+  example: string | null;
+  keyTerms: { term: string; definition: string }[];
+  diagram: string | null;
+  diagramCaption: string | null;
+  checkQuestion: string | null;
+  checkAnswer: string | null;
+  sourcePages: string | null;
+}
+
+export interface ChatMessage {
+  id: number;
+  role: "user" | "assistant";
+  content: string;
+  pages: number[];
+  createdAt: string;
+}
+
+export interface GuideResource {
+  kind: "video" | "video_search" | "reading";
+  title: string;
+  url: string;
+  description: string | null;
+  source: string | null;
+  thumbnailUrl: string | null;
+}
+
+export interface GuideDetail extends GuideSummary {
+  overview: string | null;
+  objectives: string[];
+  sections: GuideSection[];
+  quiz: { position: number; question: string; options: string[]; difficulty: "easy" | "medium" | "hard" }[];
+  quizAttempts: { attemptId: string; score: number; rating: string; createdAt: string }[];
+  resources: GuideResource[];
+  messages: ChatMessage[];
+  audio: { scriptId: string; status: EpisodeStatus; progress: number; stageLabel: string } | null;
+}
+
+export interface QuizResult {
+  attemptId: string;
+  score: number;
+  correct: number;
+  total: number;
+  rating: string;
+  previousBest: number | null;
+  results: {
+    position: number;
+    question: string;
+    options: string[];
+    chosenIndex: number;
+    correctIndex: number;
+    correct: boolean;
+    explanation: string;
+    difficulty: string;
+  }[];
+}
+
+// --- Projects ----------------------------------------------------------------
+
+export type SlideLayout = "bullets" | "two_column" | "process" | "timeline" | "stats" | "quote" | "section";
+
+export interface DeckSlide {
+  layout: SlideLayout;
+  title: string;
+  subtitle: string;
+  bullets: string[];
+  columns: { heading: string; bullets: string[] }[];
+  steps: { label: string; detail: string }[];
+  stats: { value: string; label: string }[];
+  quote: string;
+  speakerNotes: string;
+}
+
+export interface Deck {
+  title: string;
+  subtitle: string;
+  titleNotes: string;
+  slides: DeckSlide[];
+  closingMessage: string;
+  closingNotes: string;
+}
+
+export interface DefensePack {
+  openingLine: string;
+  script: { slideNumber: number; title: string; talkingPoints: string; seconds: number; transition: string }[];
+  closingLine: string;
+  strategy: string[];
+  likelyQuestions: { question: string; why: string; modelAnswer: string; tip: string }[];
+  weakSpots: string[];
+}
+
+export interface ProjectSummary {
+  projectId: string;
+  title: string;
+  course: string | null;
+  status: EpisodeStatus;
+  stage: string;
+  stageLabel: string;
+  progress: number;
+  error: string | null;
+  slideCount: number;
+  durationMinutes: number;
+  sourceFilename: string | null;
+  createdAt: string | null;
+  questionSetId: string | null;
+}
+
+export interface ProjectDetail extends ProjectSummary {
+  deck: Deck | null;
+  defense: DefensePack | null;
+  downloadUrl: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Requests
 // ---------------------------------------------------------------------------
@@ -211,20 +353,43 @@ export const api = {
     style: LessonStyle;
     level: LessonLevel;
     language: LessonLanguage;
+    guideId?: string;
   }) => request<EpisodeSummary>("/api/episodes", json("POST", body)),
   episode: (id: string) => request<EpisodeManifest>(`/api/episodes/${id}`),
   deleteEpisode: (id: string) => request<void>(`/api/episodes/${id}`, { method: "DELETE" }),
   saveProgress: (id: string, body: { positionSec: number; listenedSec: number; completed: boolean }) =>
     request<{ positionSec: number; completed: boolean }>(`/api/episodes/${id}/progress`, { ...json("PUT", body), keepalive: true }),
 
-  flashcards: (params: { episodeId?: string; due?: boolean; limit?: number }) => {
+  flashcards: (params: { episodeId?: string; guideId?: string; due?: boolean; limit?: number }) => {
     const q = new URLSearchParams();
     if (params.episodeId) q.set("episodeId", params.episodeId);
+    if (params.guideId) q.set("guideId", params.guideId);
     if (params.due === false) q.set("due", "false");
     if (params.limit) q.set("limit", String(params.limit));
     return request<{ cards: Flashcard[]; stats: DeckStats }>(`/api/flashcards?${q}`);
   },
   reviewCard: (id: number, rating: Rating) => request<Flashcard>(`/api/flashcards/${id}/review`, json("POST", { rating })),
+
+  createGuide: (body: {
+    documentId: string;
+    pageStart?: number;
+    pageEnd?: number;
+    title?: string;
+    level: LessonLevel;
+    language: LessonLanguage;
+  }) => request<GuideSummary>("/api/guides", json("POST", body)),
+  guide: (id: string) => request<GuideDetail>(`/api/guides/${id}`),
+  deleteGuide: (id: string) => request<void>(`/api/guides/${id}`, { method: "DELETE" }),
+  submitQuiz: (id: string, answers: number[]) => request<QuizResult>(`/api/guides/${id}/quiz`, json("POST", { answers })),
+  askTutor: (id: string, message: string) =>
+    request<{ question: ChatMessage; answer: ChatMessage }>(`/api/guides/${id}/chat`, json("POST", { message })),
+  remakePractice: (id: string) => request<GuideDetail>(`/api/guides/${id}/practice`, { method: "POST" }),
+
+  projects: () => request<ProjectSummary[]>("/api/projects"),
+  project: (id: string) => request<ProjectDetail>(`/api/projects/${id}`),
+  createProject: (form: FormData) => request<ProjectSummary>("/api/projects", { method: "POST", body: form }),
+  deleteProject: (id: string) => request<void>(`/api/projects/${id}`, { method: "DELETE" }),
+  practiceProject: (id: string) => request<{ setId: string }>(`/api/projects/${id}/practice`, { method: "POST" }),
 
   practiceSets: () => request<QuestionSetSummary[]>("/api/defense/sets"),
   practiceSet: (id: string) => request<PracticeSet>(`/api/defense/sets/${id}`),

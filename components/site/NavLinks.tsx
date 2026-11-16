@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 
 export const APP_NAV = [
   { href: "/library", label: "Library" },
+  { href: "/projects", label: "Projects" },
   { href: "/flashcards", label: "Flashcards" },
-  { href: "/practice", label: "Defense practice" },
+  { href: "/practice", label: "Practice" },
   { href: "/progress", label: "Progress" },
 ];
 

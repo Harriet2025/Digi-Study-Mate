@@ -49,6 +49,7 @@ def queue_episode(
     style: str,
     level: str,
     language: str,
+    guide_id: str | None = None,
 ) -> Episode:
     document = db.get(Document, document_id)
     if document is None:
@@ -71,6 +72,7 @@ def queue_episode(
         style=style,
         level=level,
         language=language,
+        guide_id=guide_id,
         status="queued",
         stage="queued",
         progress=0,
@@ -188,6 +190,7 @@ def episode_summary(episode: Episode) -> dict:
         "style": episode.style,
         "level": episode.level,
         "language": episode.language,
+        "guideId": episode.guide_id,
         "targetMinutes": episode.target_minutes,
         "pageStart": episode.page_start,
         "pageEnd": episode.page_end,

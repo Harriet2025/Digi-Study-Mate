@@ -13,14 +13,15 @@ router = APIRouter(prefix="/api/flashcards", tags=["flashcards"])
 @router.get("")
 def cards(
     episodeId: str | None = Query(default=None, max_length=36),
+    guideId: str | None = Query(default=None, max_length=36),
     due: bool = True,
     limit: int = Query(default=30, ge=1, le=200),
     db: Session = Depends(get_db),
 ) -> dict:
     """Cards to review (due now by default), optionally for one lesson, plus deck stats."""
     return {
-        "cards": [card_json(c) for c in list_cards(db, episode_id=episodeId, due_only=due, limit=limit)],
-        "stats": deck_stats(db, episodeId),
+        "cards": [card_json(c) for c in list_cards(db, episode_id=episodeId, guide_id=guideId, due_only=due, limit=limit)],
+        "stats": deck_stats(db, episodeId, guideId),
     }
 
 

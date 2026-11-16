@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     elevenlabs_voice_sam: str = "TX3LPaxmHKxFdv7VOQHJ"  # "Liam": young, energetic
     tts_concurrency: int = Field(default=2, ge=1, le=20)
 
+    # --- YouTube (optional) ---------------------------------------------------
+    #: With a YouTube Data API key, resources show real videos; without one, YouTube search links.
+    youtube_api_key: str = ""
+
     # --- Files & web ---------------------------------------------------------
     media_dir: Path = BACKEND_DIR / "media"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]

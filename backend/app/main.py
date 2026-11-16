@@ -14,9 +14,11 @@ from sqlalchemy.exc import SQLAlchemyError
 from .config import get_settings
 from .db import get_engine
 from .episodes.service import fail_interrupted_jobs
+from .guides.service import fail_interrupted_guides
+from .projects.service import fail_interrupted_projects
 from .schema import ensure_schema
 from .errors import AppError
-from .routers import ask, defense, documents, episodes, flashcards, study
+from .routers import ask, defense, documents, episodes, flashcards, guides, projects, study
 
 logger = logging.getLogger("study_mate")
 
@@ -33,7 +35,7 @@ async def lifespan(_: FastAPI):
         from sqlalchemy.orm import Session
 
         with Session(get_engine()) as db:
-            failed = fail_interrupted_jobs(db)
+            failed = fail_interrupted_jobs(db) + fail_interrupted_guides(db) + fail_interrupted_projects(db)
             if failed:
                 logger.warning("Marked %d interrupted lesson(s) as failed", failed)
     except SQLAlchemyError as err:
@@ -50,7 +52,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for module in (documents, episodes, ask, defense, flashcards, study):
+for module in (documents, episodes, guides, projects, ask, defense, flashcards, study):
     app.include_router(module.router)
 
 # Generated MP3s: /media/episodes/<id>/0000-alex.mp3

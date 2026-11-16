@@ -30,6 +30,8 @@ class CreateEpisodeBody(BaseModel):
     style: Literal["standard", "recap", "deep_dive", "exam_cram"] = "standard"
     level: Literal["beginner", "intermediate", "advanced"] = "intermediate"
     language: Literal["en", "fr", "es", "pt", "de"] = "en"
+    #: Attach this audio lesson to a study space (its "Listen" tab).
+    guideId: str | None = Field(default=None, min_length=36, max_length=36)
 
     @model_validator(mode="after")
     def check_range(self) -> "CreateEpisodeBody":
@@ -51,6 +53,7 @@ def create(body: CreateEpisodeBody, background: BackgroundTasks, db: Session = D
         style=body.style,
         level=body.level,
         language=body.language,
+        guide_id=body.guideId,
     )
     background.add_task(run_episode_job, episode.id)
     return episode_summary(episode)

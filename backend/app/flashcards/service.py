@@ -4,13 +4,13 @@ import re
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import func, select, true
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from ..ai.groq import groq_json
 from ..ai.script import LANGUAGES, ScriptLine
 from ..errors import AppError
-from ..models import Episode, Flashcard, StudyEvent
+from ..models import Episode, Flashcard, StudyEvent, StudyGuide
 from .srs import CardState, Rating, due_after, preview, schedule
 
 MAX_GENERATED_CARDS = 10
@@ -87,10 +87,12 @@ def _state(card: Flashcard) -> CardState:
 
 
 def card_json(card: Flashcard) -> dict:
+    source = card.episode or card.guide
     return {
         "id": card.id,
         "episodeId": card.episode_id,
-        "lessonTitle": card.episode.title if card.episode else None,
+        "guideId": card.guide_id,
+        "lessonTitle": source.title if source else None,
         "front": card.front,
         "back": card.back,
         "source": card.source,
@@ -102,10 +104,24 @@ def card_json(card: Flashcard) -> dict:
     }
 
 
-def list_cards(db: Session, *, episode_id: str | None, due_only: bool, limit: int) -> list[Flashcard]:
-    query = select(Flashcard).join(Episode).where(Episode.status == "ready")
+def _ready_cards(query, episode_id: str | None = None, guide_id: str | None = None):
+    """Cards whose lesson or study guide finished generating, optionally for one of them."""
+    query = (
+        query.outerjoin(Episode, Flashcard.episode_id == Episode.id)
+        .outerjoin(StudyGuide, Flashcard.guide_id == StudyGuide.id)
+        .where(or_(Episode.status == "ready", StudyGuide.status == "ready"))
+    )
     if episode_id:
         query = query.where(Flashcard.episode_id == episode_id)
+    if guide_id:
+        query = query.where(Flashcard.guide_id == guide_id)
+    return query
+
+
+def list_cards(
+    db: Session, *, episode_id: str | None, due_only: bool, limit: int, guide_id: str | None = None
+) -> list[Flashcard]:
+    query = _ready_cards(select(Flashcard), episode_id, guide_id)
     if due_only:
         query = query.where(Flashcard.due_at <= datetime.now()).order_by(Flashcard.due_at)
     else:
@@ -128,16 +144,11 @@ def review_card(db: Session, card_id: int, rating: Rating) -> Flashcard:
     return card
 
 
-def deck_stats(db: Session, episode_id: str | None = None) -> dict:
-    base = select(func.count(Flashcard.id)).join(Episode).where(Episode.status == "ready")
-    if episode_id:
-        base = base.where(Flashcard.episode_id == episode_id)
+def deck_stats(db: Session, episode_id: str | None = None, guide_id: str | None = None) -> dict:
+    count = _ready_cards(select(func.count(Flashcard.id)), episode_id, guide_id)
     now = datetime.now()
-    total = db.scalar(base) or 0
-    due = db.scalar(base.where(Flashcard.due_at <= now)) or 0
-    learned = db.scalar(base.where(Flashcard.repetitions >= 2)) or 0
-    next_due = db.scalar(
-        select(func.min(Flashcard.due_at)).join(Episode).where(Episode.status == "ready", Flashcard.due_at > now)
-        .where(Flashcard.episode_id == episode_id if episode_id else true())
-    )
+    total = db.scalar(count) or 0
+    due = db.scalar(count.where(Flashcard.due_at <= now)) or 0
+    learned = db.scalar(count.where(Flashcard.repetitions >= 2)) or 0
+    next_due = db.scalar(_ready_cards(select(func.min(Flashcard.due_at)), episode_id, guide_id).where(Flashcard.due_at > now))
     return {"total": total, "due": due, "learned": learned, "nextDueAt": next_due.isoformat() if next_due else None}

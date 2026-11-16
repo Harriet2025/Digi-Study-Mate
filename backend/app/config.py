@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     def sqlalchemy_url(self, *, with_database: bool = True) -> URL | str:
         """Connection URL. with_database=False connects to the server only (used to create the database)."""
         if self.database_url:
-            return self.database_url
+            return _normalize_database_url(self.database_url)
         # URL.create escapes special characters in the password safely.
         return URL.create(
             "mysql+pymysql",
@@ -64,6 +64,15 @@ class Settings(BaseSettings):
             database=self.mysql_database if with_database else None,
             query={"charset": "utf8mb4"},
         )
+
+
+def _normalize_database_url(url: str) -> str:
+    """Hosts like Railway give `mysql://user:pass@host:port/db`; SQLAlchemy needs the PyMySQL driver and utf8mb4."""
+    if url.startswith("mysql://"):
+        url = "mysql+pymysql://" + url.removeprefix("mysql://")
+    if url.startswith("mysql+pymysql://") and "charset=" not in url:
+        url += ("&" if "?" in url else "?") + "charset=utf8mb4"
+    return url
 
 
 @lru_cache

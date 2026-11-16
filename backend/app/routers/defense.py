@@ -7,7 +7,7 @@ from starlette.concurrency import run_in_threadpool
 
 from ..ask.service import MAX_AUDIO_BYTES, transcribe
 from ..db import get_db
-from ..defense.service import MAX_ANSWER_CHARS, evaluate_answer, generate_question_set
+from ..defense.service import MAX_ANSWER_CHARS, evaluate_answer, generate_question_set, get_set, list_sets
 from ..errors import AppError
 
 router = APIRouter(prefix="/api/defense", tags=["defense"])
@@ -36,6 +36,17 @@ def questions(body: QuestionsBody, db: Session = Depends(get_db)) -> dict:
     return generate_question_set(
         db, document_id=body.documentId, text=body.text, title=body.title, page_start=body.pageStart, page_end=body.pageEnd
     )
+
+
+@router.get("/sets")
+def sets(db: Session = Depends(get_db)) -> list[dict]:
+    return list_sets(db)
+
+
+@router.get("/sets/{set_id}")
+def set_detail(set_id: str, db: Session = Depends(get_db)) -> dict:
+    """Questions (no rubrics) with each question's attempts; the latest evaluation includes the rubric."""
+    return get_set(db, set_id)
 
 
 class TypedAnswerBody(BaseModel):

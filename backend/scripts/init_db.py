@@ -14,6 +14,7 @@ from sqlalchemy.schema import CreateIndex, CreateTable
 from app import models  # noqa: F401  (registers the tables)
 from app.config import BACKEND_DIR, get_settings
 from app.db import Base
+from app.schema import ensure_schema
 
 SCHEMA_FILE = BACKEND_DIR / "schema.sql"
 
@@ -49,11 +50,11 @@ def create_database_and_tables() -> None:
         server.dispose()
         engine = create_engine(url)
 
-    Base.metadata.create_all(engine)
-    with engine.connect() as conn:
-        tables = sorted(Base.metadata.tables)
-        print(f"Database ready: {engine.url.render_as_string(hide_password=True)}")
-        print("Tables:", ", ".join(tables))
+    added = ensure_schema(engine)
+    print(f"Database ready: {engine.url.render_as_string(hide_password=True)}")
+    print("Tables:", ", ".join(sorted(Base.metadata.tables)))
+    if added:
+        print("Added columns:", ", ".join(added))
     engine.dispose()
 
 

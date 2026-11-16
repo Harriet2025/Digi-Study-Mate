@@ -44,6 +44,18 @@ npm run dev           # Website on http://localhost:3000
 
 Check everything is connected: http://localhost:3000/api/health should show `"database": "ok"`.
 
+## Screens
+
+| Page | What it does |
+|---|---|
+| `/` | Homepage |
+| `/upload` | Upload a PDF/PPTX, pick pages, length, style (standard, quick recap, deep dive, exam cram), level and language |
+| `/listen/{id}` | Live progress while a lesson is made, then the player: transcript, speed, resume, Interrupt & Ask, download, share |
+| `/library` | Documents with their lessons and practice sets, "continue listening", delete |
+| `/flashcards` | Spaced-repetition review of cards made from each lesson (`?episodeId=` for one lesson) |
+| `/practice`, `/practice/{id}` | Generate 5 defense questions, answer typed or spoken, see the graded rubric |
+| `/progress` | Study streak, 12-week activity calendar, totals and weak spots |
+
 ## API
 
 Interactive API docs: http://127.0.0.1:8010/docs
@@ -51,12 +63,18 @@ Interactive API docs: http://127.0.0.1:8010/docs
 | Endpoint | What it does |
 |---|---|
 | `POST /api/upload` | Upload a `.pdf` / `.pptx`; extracts, cleans and chunks the text |
-| `GET /api/documents` | List uploaded documents |
-| `POST /api/episodes` | `{documentId, pageStart?, pageEnd?, targetMinutes}` → Alex & Sam episode with audio |
-| `GET /api/episodes/{id}` | Playback manifest (used by `/listen/{id}`) |
+| `GET/DELETE /api/documents/{id}` | One document (delete removes its lessons, cards and practice sets) |
+| `POST /api/episodes` | Start a lesson (`documentId, pageStart, pageEnd, targetMinutes, style, level, language`); made in the background |
+| `GET /api/episodes/{id}` | Status/progress, then the playback manifest |
+| `PUT /api/episodes/{id}/progress` | Save listening position and time listened |
+| `GET /api/episodes/{id}/download` | The whole lesson as one MP3 |
+| `GET /api/flashcards`, `POST /api/flashcards/{id}/review` | Due cards; rate again/hard/good/easy |
 | `POST /api/ask` | "Interrupt & Ask": spoken question → Alex's spoken answer |
-| `POST /api/defense/questions` | 5 defense questions for a document or text (rubrics hidden) |
-| `POST /api/defense/evaluate` | Grade a typed (JSON) or spoken (audio) answer against the rubric |
+| `POST /api/defense/questions`, `GET /api/defense/sets[/{id}]` | Create and load practice sets |
+| `POST /api/defense/evaluate` | Grade a typed (JSON) or spoken (audio) answer |
+| `GET /api/library`, `GET /api/insights` | Library overview; streaks, calendar, weak spots |
+
+The database schema upgrades itself on startup (new tables and columns are added; nothing is dropped).
 
 ## Tests
 

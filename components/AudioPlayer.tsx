@@ -49,16 +49,45 @@ export interface AudioPlayerProps {
   title?: string;
   /** Endpoint for "Interrupt & Ask". */
   askEndpoint?: string;
+  /** When set, listening progress is saved to the server (resume + study time). */
+  episodeId?: string;
+  /** Lesson language; Alex answers questions in it. */
+  language?: string;
+  /** Where to resume from (seconds). */
+  initialPositionSec?: number;
+  /** Shown in the "lesson complete" prompt. */
+  flashcardCount?: number;
 }
+
+const SPEEDS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
+const SPEED_STORAGE_KEY = "studymate.playbackSpeed";
+const PROGRESS_SAVE_MS = 15_000;
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" }: AudioPlayerProps) {
+export default function AudioPlayer({
+  manifest,
+  title,
+  askEndpoint = "/api/ask",
+  episodeId,
+  language = "en",
+  initialPositionSec = 0,
+  flashcardCount = 0,
+}: AudioPlayerProps) {
   const segments = manifest.segments;
   const totalSec = manifest.totalDurationSec;
   const lines = useMemo(() => groupIntoLines(segments), [segments]);
+
+  // Playback speed (remembered per browser) and listening-progress tracking
+  const [speed, setSpeedState] = useState(1);
+  const speedRef = useRef(1);
+  const listenedSinceSaveRef = useRef(0);
+  const lastTickRef = useRef<number | null>(null);
+  const [resumedFrom, setResumedFrom] = useState<number | null>(null);
+  const [finished, setFinished] = useState(false);
+  const [userScrolledAway, setUserScrolledAway] = useState(false);
 
   // Elements
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -119,11 +148,12 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
     gapRef.current = null;
   };
 
+  // Gap times are in timeline milliseconds; at 1.5× speed they pass 1.5× faster.
   const pauseGap = () => {
     const gap = gapRef.current;
     if (!gap || gap.timer === null) return;
     window.clearTimeout(gap.timer);
-    gap.remainingMs = Math.max(0, gap.remainingMs - (performance.now() - gap.startedAt));
+    gap.remainingMs = Math.max(0, gap.remainingMs - (performance.now() - gap.startedAt) * speedRef.current);
     gap.timer = null;
   };
 
@@ -131,7 +161,41 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
     const gap = gapRef.current;
     if (!gap || gap.timer !== null) return;
     gap.startedAt = performance.now();
-    gap.timer = window.setTimeout(advanceToNextSegment, gap.remainingMs);
+    gap.timer = window.setTimeout(advanceToNextSegment, gap.remainingMs / speedRef.current);
+  };
+
+  const applySpeed = (value: number) => {
+    const running = gapRef.current?.timer != null;
+    if (running) pauseGap();
+    speedRef.current = value;
+    setSpeedState(value);
+    if (audioRef.current) audioRef.current.playbackRate = value;
+    if (running) resumeGap();
+    try {
+      localStorage.setItem(SPEED_STORAGE_KEY, String(value));
+    } catch {
+      /* storage unavailable */
+    }
+  };
+
+  const cycleSpeed = () => {
+    const i = SPEEDS.indexOf(speedRef.current as (typeof SPEEDS)[number]);
+    applySpeed(SPEEDS[(i + 1) % SPEEDS.length]!);
+  };
+
+  /** Sends listening progress (position + seconds listened since the last save). */
+  const saveProgress = (completed = false) => {
+    if (!episodeId) return;
+    const listenedSec = Math.round(listenedSinceSaveRef.current);
+    listenedSinceSaveRef.current = 0;
+    fetch(`/api/episodes/${episodeId}/progress`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ positionSec: Math.round(timeRef.current * 10) / 10, listenedSec, completed }),
+      keepalive: true, // still sent if the page is closing
+    }).catch(() => {
+      listenedSinceSaveRef.current += listenedSec; // retry with the next save
+    });
   };
 
   const startGap = (ms: number) => {
@@ -146,7 +210,7 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
     if (!seg) return 0;
     const gap = gapRef.current;
     if (gap) {
-      const running = gap.timer !== null ? performance.now() - gap.startedAt : 0;
+      const running = gap.timer !== null ? (performance.now() - gap.startedAt) * speedRef.current : 0;
       const spentMs = seg.pauseAfterSec * 1000 - gap.remainingMs + running;
       return Math.min(seg.endSec + spentMs / 1000, seg.endSec + seg.pauseAfterSec);
     }
@@ -180,6 +244,7 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
     const begin = () => {
       if (segIndexRef.current !== i) return; // a newer load won
       audio.currentTime = Math.max(0, Math.min(offsetSec, Math.max(0, seg.durationSec - 0.05)));
+      audio.playbackRate = speedRef.current; // a new source resets the rate
       if (autoplay) playElement();
     };
 
@@ -201,6 +266,8 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
     } else {
       setPlaying(false);
       setTime(totalSec);
+      setFinished(true);
+      saveProgress(true);
     }
   }
 
@@ -247,6 +314,8 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
   const play = () => {
     if (segments.length === 0) return;
     setPlayerError(null);
+    setResumedFrom(null);
+    setFinished(false);
     setPlaying(true);
 
     if (timeRef.current >= totalSec - 0.05) {
@@ -270,6 +339,7 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
     audioRef.current?.pause();
     pauseGap();
     setTime(computeTime());
+    saveProgress();
   };
 
   const togglePlay = () => (playingRef.current ? pause() : play());
@@ -277,12 +347,19 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
 
   // Drive the clock while playing (throttled to ~10 renders/sec).
   useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying) {
+      lastTickRef.current = null;
+      return;
+    }
     let raf = 0;
     let lastRendered = -1;
     const tick = () => {
       const t = computeTime();
       timeRef.current = t;
+      // Count real (wall-clock) listening time for study stats.
+      const now = performance.now();
+      if (lastTickRef.current !== null) listenedSinceSaveRef.current += (now - lastTickRef.current) / 1000;
+      lastTickRef.current = now;
       if (Math.abs(t - lastRendered) >= 0.1) {
         lastRendered = t;
         setCurrentTime(t);
@@ -290,10 +367,35 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-    // computeTime only reads refs.
+    const saver = window.setInterval(() => saveProgress(), PROGRESS_SAVE_MS);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearInterval(saver);
+    };
+    // computeTime/saveProgress only read refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
+
+  // Restore the saved speed and resume position once, on mount.
+  useEffect(() => {
+    try {
+      const saved = Number(localStorage.getItem(SPEED_STORAGE_KEY));
+      if (SPEEDS.includes(saved as (typeof SPEEDS)[number]) && saved !== 1) applySpeed(saved);
+    } catch {
+      /* storage unavailable */
+    }
+    if (initialPositionSec > 5 && initialPositionSec < totalSec - 5) {
+      seekTo(initialPositionSec, false);
+      setResumedFrom(initialPositionSec);
+    }
+    // Save progress when the tab is hidden or closed.
+    const onHide = () => {
+      if (document.visibilityState === "hidden" && playingRef.current) saveProgress();
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Warm the browser cache with the next segment so transitions are seamless.
   useEffect(() => {
@@ -343,7 +445,10 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
     const container = transcriptRef.current;
     const el = lineRefs.current.get(activeLineIndex);
     if (!container || !el) return;
-    if (Date.now() - lastUserScrollRef.current < USER_SCROLL_GRACE_MS) return;
+    if (Date.now() - lastUserScrollRef.current < USER_SCROLL_GRACE_MS) {
+      setUserScrolledAway(true);
+      return;
+    }
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     container.scrollTo({
       top: el.offsetTop - container.clientHeight * 0.3,
@@ -448,6 +553,7 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
       "context",
       JSON.stringify({
         lectureTitle: title,
+        language,
         transcript: buildContext(lines, afterLineIndex),
         currentTimeSec: Math.round(timeRef.current),
       }),
@@ -552,7 +658,7 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
   return (
     <section
       aria-label={title ? `Audio lesson: ${title}` : "Audio lesson"}
-      className="mx-auto flex w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-sand bg-cream shadow-[0_1px_0_rgba(41,37,36,0.04),0_12px_40px_-16px_rgba(41,37,36,0.25)]"
+      className="mx-auto flex w-full max-w-3xl flex-col rounded-3xl border border-sand bg-cream shadow-[0_1px_0_rgba(41,37,36,0.04),0_12px_40px_-16px_rgba(41,37,36,0.25)]"
     >
       {/* Hidden media elements */}
       <audio
@@ -572,7 +678,7 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
       <audio ref={answerAudioRef} onEnded={finishAnswer} />
 
       {/* Header */}
-      <header className="border-b border-sand px-5 pt-6 pb-5 sm:px-8">
+      <header className="rounded-t-3xl border-b border-sand px-5 pt-6 pb-5 sm:px-8">
         <p className="text-xs font-semibold tracking-[0.18em] text-terracotta-deep uppercase">Study session</p>
         <h2 className="mt-1 font-serif text-2xl leading-tight font-semibold text-balance sm:text-3xl">
           {title ?? "Your lecture, as a conversation"}
@@ -587,7 +693,7 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
         ref={transcriptRef}
         onWheel={markUserScroll}
         onTouchMove={markUserScroll}
-        className="relative h-[46vh] min-h-72 overflow-y-auto overscroll-contain px-3 py-4 sm:h-[52vh] sm:px-6"
+        className="relative h-[max(14rem,calc(100dvh-30rem))] overflow-y-auto px-3 py-4 sm:px-6"
         aria-label="Transcript"
       >
         <ol className="flex flex-col gap-1">
@@ -657,8 +763,52 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
         </ol>
       </div>
 
-      {/* Controls */}
-      <div className="border-t border-sand bg-cream-deep/50 px-5 pt-4 pb-5 sm:px-8">
+      {userScrolledAway && (
+        <div className="pointer-events-none relative z-20 -mt-14 mb-4 flex justify-center">
+          <button
+            type="button"
+            onClick={jumpToCurrentLine}
+            className="pointer-events-auto rounded-full bg-charcoal px-4 py-2 text-sm font-medium text-cream shadow-lg transition hover:bg-charcoal/85"
+          >
+            ↓ Back to current line
+          </button>
+        </div>
+      )}
+
+      {/* Controls. The transcript is sized so the whole player fits on screen. */}
+      <div className="rounded-b-3xl border-t border-sand bg-cream-deep/60 px-5 pt-4 pb-5 sm:px-8">
+        {resumedFrom !== null && (
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-terracotta-soft/60 px-4 py-2 text-sm">
+            <span>
+              Picking up where you left off at <span className="font-semibold tabular-nums">{formatTime(resumedFrom)}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setResumedFrom(null);
+                seekTo(0, false);
+              }}
+              className="shrink-0 font-semibold text-terracotta-deep underline-offset-4 hover:underline"
+            >
+              Start over
+            </button>
+          </div>
+        )}
+        {finished && episodeId && (
+          <div className="mb-3 flex flex-col gap-3 rounded-2xl bg-charcoal px-4 py-3 text-cream sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm">
+              <span className="font-serif text-base font-semibold">Lesson complete!</span> Lock it in while it&apos;s fresh.
+            </span>
+            {flashcardCount > 0 && (
+              <a
+                href={`/flashcards?episodeId=${episodeId}`}
+                className="shrink-0 rounded-full bg-terracotta px-4 py-2 text-center text-sm font-medium text-white hover:bg-terracotta-deep"
+              >
+                Review {flashcardCount} flashcards
+              </a>
+            )}
+          </div>
+        )}
         {/* Progress */}
         <div className="flex items-center gap-3">
           <span className="w-12 text-right text-xs text-stone tabular-nums">{formatTime(displayTime)}</span>
@@ -704,6 +854,15 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
             <IconButton label={`Forward ${SKIP_SECONDS} seconds`} onClick={() => skip(SKIP_SECONDS)}>
               <SkipIcon direction="forward" />
             </IconButton>
+            <button
+              type="button"
+              onClick={cycleSpeed}
+              aria-label={`Playback speed ${speed}×. Change speed`}
+              title="Playback speed"
+              className="ml-1 min-w-14 rounded-full border border-sand px-2.5 py-1.5 text-sm font-semibold tabular-nums transition hover:border-terracotta/50 hover:bg-cream focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:outline-none"
+            >
+              {speed}×
+            </button>
           </div>
 
           {/* Interrupt & Ask */}
@@ -754,6 +913,14 @@ export default function AudioPlayer({ manifest, title, askEndpoint = "/api/ask" 
       </div>
     </section>
   );
+
+  function jumpToCurrentLine() {
+    lastUserScrollRef.current = 0;
+    setUserScrolledAway(false);
+    const container = transcriptRef.current;
+    const el = lineRefs.current.get(activeLineRef.current);
+    if (container && el) container.scrollTo({ top: el.offsetTop - container.clientHeight * 0.3, behavior: "smooth" });
+  }
 
   function commitScrub() {
     if (scrubTime === null) return;

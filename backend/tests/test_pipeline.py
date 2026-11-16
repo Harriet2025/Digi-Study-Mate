@@ -29,6 +29,13 @@ FAKE_SCRIPT = {
         {"speaker": "Sam", "text": "Hmm… aren't they the same thing?", "type": "dialogue"},
         {"speaker": "Alex", "text": "Quick checkpoint! Is a list of unlabeled dates data or information?", "type": "quiz_checkpoint"},
         {"speaker": "Sam", "text": "Data, because there's no context.", "type": "dialogue"},
+        {"speaker": "Alex", "text": "Right: without labels they're just raw data.", "type": "dialogue"},
+    ]
+}
+FAKE_DECK = {
+    "cards": [
+        {"front": "What is data?", "back": "Raw, unprocessed facts."},
+        {"front": "What turns data into information?", "back": "Context that gives it meaning."},
     ]
 }
 FAKE_QUESTIONS = {
@@ -73,7 +80,14 @@ def fake_services(monkeypatch):
         name = response_format["json_schema"]["name"]
         schema = response_format["json_schema"]["schema"]
         assert schema["additionalProperties"] is False  # Groq strict mode requirement
-        return json.dumps({"audio_script": FAKE_SCRIPT, "defense_question_set": FAKE_QUESTIONS, "answer_evaluation": FAKE_EVALUATION}[name])
+        return json.dumps(
+            {
+                "audio_script": FAKE_SCRIPT,
+                "flashcard_deck": FAKE_DECK,
+                "defense_question_set": FAKE_QUESTIONS,
+                "answer_evaluation": FAKE_EVALUATION,
+            }[name]
+        )
 
     monkeypatch.setattr(groq, "_chat", fake_chat)
     monkeypatch.setattr(groq, "groq_transcribe", lambda audio, filename, prompt=None: "What is a primary key?")
@@ -155,16 +169,44 @@ def test_full_flow(client):
     assert doc["pageCount"] == 6 and doc["chunkCount"] >= 1
     assert any(d["documentId"] == doc["documentId"] for d in client.get("/api/documents").json())
 
-    # 2. Episode: script + audio + manifest
-    r = client.post("/api/episodes", json={"documentId": doc["documentId"], "pageStart": 1, "pageEnd": 2, "targetMinutes": 3})
-    assert r.status_code == 201, r.text
-    manifest = r.json()
+    # 2. Episode: queued, then made in the background (TestClient runs background tasks before returning)
+    r = client.post(
+        "/api/episodes",
+        json={"documentId": doc["documentId"], "pageStart": 1, "pageEnd": 2, "targetMinutes": 3, "style": "exam_cram", "language": "fr"},
+    )
+    assert r.status_code == 202, r.text
+    assert r.json()["status"] == "queued"
+    manifest = client.get(f"/api/episodes/{r.json()['scriptId']}").json()
+    assert manifest["status"] == "ready" and manifest["progress"] == 100, manifest
+    assert manifest["style"] == "exam_cram" and manifest["language"] == "fr"
+    # 1 checkpoint card + 2 AI cards
+    assert manifest["flashcardCount"] == 3
     segs = manifest["segments"]
-    assert len(segs) == 4 and segs[2]["type"] == "quiz_checkpoint" and segs[2]["pauseAfterSec"] == 3.0
+    assert len(segs) == 5 and segs[2]["type"] == "quiz_checkpoint" and segs[2]["pauseAfterSec"] == 3.0
     assert segs[0]["pauseAfterSec"] == 0.3 and segs[1]["startSec"] == pytest.approx(segs[0]["endSec"] + 0.3, abs=0.01)
     assert client.get(segs[0]["url"]).headers["content-type"] == "audio/mpeg"
-    assert client.get(f"/api/episodes/{manifest['scriptId']}").json()["totalDurationSec"] == manifest["totalDurationSec"]
     assert client.get("/api/episodes/00000000-0000-0000-0000-000000000000").status_code == 404
+    episode_id = manifest["scriptId"]
+
+    # Listening progress, resume and download
+    r = client.put(f"/api/episodes/{episode_id}/progress", json={"positionSec": 2.5, "listenedSec": 90})
+    assert r.status_code == 200 and r.json()["positionSec"] == 2.5
+    assert client.get(f"/api/episodes/{episode_id}").json()["listening"]["positionSec"] == 2.5
+    r = client.get(f"/api/episodes/{episode_id}/download")
+    assert r.status_code == 200 and r.headers["content-type"] == "audio/mpeg"
+    assert "attachment" in r.headers["content-disposition"] and len(r.content) > 1000
+
+    # Flashcards: all due now; reviewing schedules them into the future
+    deck = client.get(f"/api/flashcards?episodeId={episode_id}").json()
+    assert deck["stats"]["due"] == 3 and len(deck["cards"]) == 3
+    checkpoint = next(c for c in deck["cards"] if c["source"] == "checkpoint")
+    assert checkpoint["front"].startswith("Is a list") and checkpoint["back"].startswith("Without labels")
+    first = deck["cards"][0]
+    assert first["nextIntervals"]["good"] == 1.0
+    r = client.post(f"/api/flashcards/{first['id']}/review", json={"rating": "good"})
+    assert r.status_code == 200 and r.json()["repetitions"] == 1
+    client.post(f"/api/flashcards/{deck['cards'][1]['id']}/review", json={"rating": "again"})
+    assert client.get(f"/api/flashcards?episodeId={episode_id}").json()["stats"]["due"] == 1
 
     # 3. Interrupt & Ask
     r = client.post(
@@ -188,9 +230,76 @@ def test_full_flow(client):
     assert ev["score"] == 75 and ev["grade"] == "good" and ev["keyPointResults"][1]["status"] == "missing"
     assert ev["rubric"]["keyPoints"][0]["id"] == "q1-k1"
 
+    # Practice set detail keeps attempt history
+    detail = client.get(f"/api/defense/sets/{qs['setId']}").json()
+    assert detail["questions"][0]["attemptCount"] == 1 and detail["questions"][0]["latest"]["score"] == 75
+    assert any(s["setId"] == qs["setId"] for s in client.get("/api/defense/sets").json())
+
+    # 5. Library and insights
+    lib = client.get("/api/library").json()
+    entry = next(d for d in lib["documents"] if d["documentId"] == doc["documentId"])
+    assert entry["episodes"][0]["scriptId"] == episode_id and entry["questionSets"][0]["answeredCount"] == 1
+    info = client.get("/api/insights").json()
+    assert info["streak"]["current"] == 1 and info["streak"]["activeToday"] is True
+    assert info["totals"]["cardsReviewed"] == 2 and info["totals"]["defenseAnswers"] == 1
+    assert len(info["calendar"]) == 84 and info["calendar"][-1]["listenMinutes"] == 1.5
+    assert info["weakSpots"]["flashcards"][0]["lapses"] == 1
+
+    # 6. Deleting the document removes its lessons and audio
+    assert client.delete(f"/api/documents/{doc['documentId']}").status_code == 204
+    assert client.get(f"/api/episodes/{episode_id}").status_code == 404
+
 
 def test_defense_request_validation(client):
     r = client.post("/api/defense/questions", json={})
     assert r.status_code == 400
     r = client.post("/api/defense/evaluate", content=b"hi", headers={"content-type": "text/plain"})
     assert r.status_code == 415
+
+
+def test_spaced_repetition_schedule():
+    from app.flashcards.srs import CardState, schedule
+
+    new = CardState(2.5, 0, 0, 0)
+    good1 = schedule(new, "good")
+    good2 = schedule(good1, "good")
+    good3 = schedule(good2, "good")
+    assert (good1.interval_days, good2.interval_days, good3.interval_days) == (1.0, 3.0, 7.5)
+    lapse = schedule(good3, "again")
+    assert lapse.repetitions == 0 and lapse.lapses == 1 and lapse.ease == pytest.approx(2.3) and lapse.interval_days < 0.01
+    assert schedule(new, "easy").interval_days == 4.0
+
+
+def test_streaks():
+    from datetime import date, timedelta
+
+    from app.study.service import _streaks
+
+    today = date(2026, 11, 16)
+    days = {today - timedelta(days=i) for i in (1, 2, 3)} | {today - timedelta(days=10)}
+    assert _streaks(days, today) == (3, 3)  # yesterday's streak still counts until today ends
+    assert _streaks(days | {today}, today) == (4, 4)
+    assert _streaks(set(), today) == (0, 0)
+
+
+def test_schema_upgrade_adds_missing_columns(tmp_path):
+    from sqlalchemy import create_engine, inspect, text
+
+    from app.schema import ensure_schema
+
+    engine = create_engine(f"sqlite:///{(tmp_path / 'old.db').as_posix()}")
+    with engine.begin() as conn:  # an "old" episodes table without the new columns
+        conn.execute(
+            text(
+                "CREATE TABLE episodes (id VARCHAR(36) PRIMARY KEY, document_id VARCHAR(36), title VARCHAR(300) NOT NULL, "
+                "page_start INTEGER, page_end INTEGER, target_minutes SMALLINT NOT NULL, total_duration_sec FLOAT NOT NULL, "
+                "ai_model VARCHAR(100) NOT NULL, tts_provider VARCHAR(50) NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+            )
+        )
+        conn.execute(text("INSERT INTO episodes (id, title, target_minutes, total_duration_sec, ai_model, tts_provider) "
+                          "VALUES ('e1', 'Old lesson', 5, 60, 'm', 'elevenlabs')"))
+    added = ensure_schema(engine)
+    assert "episodes.status" in added and "episodes.language" in added
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT status, language FROM episodes")).one() == ("ready", "en")
+    assert "flashcards" in inspect(engine).get_table_names()

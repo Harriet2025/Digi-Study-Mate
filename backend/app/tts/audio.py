@@ -4,6 +4,7 @@ import io
 import re
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -46,8 +47,11 @@ def episode_dir(episode_id: str) -> Path:
     return get_settings().media_dir / "episodes" / episode_id
 
 
-def render_episode_audio(episode_id: str, script: list[ScriptLine]) -> list[RenderedSegment]:
+def render_episode_audio(
+    episode_id: str, script: list[ScriptLine], on_progress: Callable[[int, int], None] | None = None
+) -> list[RenderedSegment]:
     """Synthesizes every piece (a few in parallel), saves MP3s, and lays them out on one timeline.
+    `on_progress(done, total)` is called from this thread as pieces finish.
     If any piece fails for good, the episode folder is deleted and the error is re-raised."""
     pieces = _plan_pieces(script, elevenlabs.MAX_CHARS_PER_REQUEST)
     out_dir = episode_dir(episode_id)
@@ -70,6 +74,8 @@ def render_episode_audio(episode_id: str, script: list[ScriptLine]) -> list[Rend
             for future in as_completed(futures):
                 try:
                     results[futures[future]] = future.result()
+                    if on_progress:
+                        on_progress(len(results), len(pieces))
                 except BaseException:
                     for f in futures:
                         f.cancel()  # stop queued work; in-flight requests finish on their own
@@ -158,3 +164,31 @@ def _duration(mp3: bytes) -> float:
         return float(MP3(io.BytesIO(mp3)).info.length)
     except Exception:
         return len(mp3) * 8 / 128_000
+
+
+# --- Single-file download ------------------------------------------------------------------------
+
+# A silent MPEG-1 Layer III frame matching ElevenLabs' mp3_44100_128 output: 417 bytes, 1152 samples.
+_SILENT_FRAME = bytes([0xFF, 0xFB, 0x90, 0x64]) + bytes(413)
+_FRAME_SEC = 1152 / 44100
+
+
+def silence(seconds: float) -> bytes:
+    return _SILENT_FRAME * max(0, round(seconds / _FRAME_SEC))
+
+
+def _strip_id3(mp3: bytes) -> bytes:
+    """Drops a leading ID3v2 tag so files can be joined into one stream."""
+    if mp3[:3] == b"ID3" and len(mp3) > 10:
+        size = (mp3[6] << 21) | (mp3[7] << 14) | (mp3[8] << 7) | mp3[9]
+        return mp3[10 + size :]
+    return mp3
+
+
+def join_episode(paths_and_pauses: list[tuple[Path, float]]) -> bytes:
+    """One MP3 for offline listening: every segment in order, with the timeline's pauses as silence."""
+    out = bytearray()
+    for path, pause in paths_and_pauses:
+        out += _strip_id3(path.read_bytes())
+        out += silence(pause)
+    return bytes(out)

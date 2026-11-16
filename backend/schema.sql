@@ -16,6 +16,17 @@ CREATE TABLE documents (
 	PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE study_events (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	kind ENUM('listen','review','defense','upload') NOT NULL, 
+	ref_id VARCHAR(64), 
+	amount FLOAT NOT NULL, 
+	created_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX ix_study_events_created_at ON study_events (created_at);
+
 CREATE TABLE defense_question_sets (
 	id VARCHAR(36) NOT NULL, 
 	document_id VARCHAR(36), 
@@ -55,6 +66,13 @@ CREATE TABLE episodes (
 	total_duration_sec FLOAT NOT NULL, 
 	ai_model VARCHAR(100) NOT NULL, 
 	tts_provider VARCHAR(50) NOT NULL, 
+	style ENUM('standard','recap','deep_dive','exam_cram') NOT NULL DEFAULT 'standard', 
+	level ENUM('beginner','intermediate','advanced') NOT NULL DEFAULT 'intermediate', 
+	language VARCHAR(10) NOT NULL DEFAULT 'en', 
+	status ENUM('queued','processing','ready','failed') NOT NULL DEFAULT 'ready', 
+	stage VARCHAR(30) NOT NULL DEFAULT 'done', 
+	progress SMALLINT NOT NULL DEFAULT '100', 
+	error_message VARCHAR(500), 
 	created_at DATETIME NOT NULL DEFAULT (now()), 
 	PRIMARY KEY (id), 
 	FOREIGN KEY(document_id) REFERENCES documents (id) ON DELETE SET NULL
@@ -98,6 +116,37 @@ CREATE TABLE episode_segments (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE INDEX ix_episode_segments_episode_id ON episode_segments (episode_id);
+
+CREATE TABLE flashcards (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	episode_id VARCHAR(36) NOT NULL, 
+	front TEXT NOT NULL, 
+	back TEXT NOT NULL, 
+	source ENUM('checkpoint','generated') NOT NULL, 
+	ease FLOAT NOT NULL, 
+	interval_days FLOAT NOT NULL, 
+	repetitions INTEGER NOT NULL, 
+	lapses INTEGER NOT NULL, 
+	due_at DATETIME NOT NULL, 
+	last_reviewed_at DATETIME, 
+	created_at DATETIME NOT NULL DEFAULT (now()), 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(episode_id) REFERENCES episodes (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE INDEX ix_flashcards_due_at ON flashcards (due_at);
+
+CREATE INDEX ix_flashcards_episode_id ON flashcards (episode_id);
+
+CREATE TABLE listening_progress (
+	episode_id VARCHAR(36) NOT NULL, 
+	position_sec FLOAT NOT NULL, 
+	listened_sec FLOAT NOT NULL, 
+	completed BOOL NOT NULL, 
+	updated_at DATETIME NOT NULL, 
+	PRIMARY KEY (episode_id), 
+	FOREIGN KEY(episode_id) REFERENCES episodes (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE defense_attempts (
 	id VARCHAR(36) NOT NULL, 

@@ -13,6 +13,7 @@ class AskContext(BaseModel):
     lectureTitle: str | None = Field(default=None, max_length=300)
     transcript: str = Field(default="", max_length=20_000)
     currentTimeSec: float | None = Field(default=None, ge=0)
+    language: str = Field(default="en", max_length=10)
 
 
 @router.post("/ask")
@@ -24,4 +25,4 @@ def interrupt_and_ask(audio: UploadFile = File(...), context: str = Form("{}")) 
         raise AppError("INVALID_REQUEST", 400, "The playback context was invalid.", detail=repr(err)) from err
 
     data = audio.file.read(MAX_AUDIO_BYTES + 1)
-    return ask(data, audio.content_type, ctx.transcript, ctx.lectureTitle)
+    return ask(data, audio.content_type, ctx.transcript, ctx.lectureTitle, ctx.language)

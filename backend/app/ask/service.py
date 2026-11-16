@@ -3,6 +3,7 @@
 import base64
 
 from ..ai.groq import groq_text, groq_transcribe
+from ..ai.script import LANGUAGES
 from ..errors import AppError
 from ..retry import with_retry
 from ..tts import elevenlabs
@@ -51,10 +52,12 @@ def transcribe(audio: bytes, content_type: str | None, *, prompt: str | None = N
     return groq_transcribe(audio, f"recording.{recording_extension(content_type)}", prompt=prompt)
 
 
-def answer_question(question: str, transcript: str, lecture_title: str | None) -> str:
+def answer_question(question: str, transcript: str, lecture_title: str | None, language: str = "en") -> str:
+    language_name = LANGUAGES.get(language, "English")
     user = "\n\n".join(
         part
         for part in [
+            f"Answer in {language_name}, the language of this lesson." if language != "en" else None,
             f"<lecture_title>{lecture_title}</lecture_title>" if lecture_title else None,
             f"<transcript_so_far>\n{transcript or '(The episode has just started.)'}\n</transcript_so_far>",
             f"<student_question>\n{question}\n</student_question>",
@@ -68,11 +71,11 @@ def answer_question(question: str, transcript: str, lecture_title: str | None) -
     return answer
 
 
-def ask(audio: bytes, content_type: str | None, transcript: str, lecture_title: str | None) -> dict:
+def ask(audio: bytes, content_type: str | None, transcript: str, lecture_title: str | None, language: str = "en") -> dict:
     question = transcribe(audio, content_type, prompt=lecture_title)
     if not question:
         raise AppError("NO_SPEECH", 422, "I couldn't hear a question. Try again a little closer to the mic.")
-    answer = answer_question(question, transcript, lecture_title)
+    answer = answer_question(question, transcript, lecture_title, language)
     mp3 = with_retry(lambda: elevenlabs.synthesize(answer, "Alex"), attempts=3)
     return {
         "question": question,

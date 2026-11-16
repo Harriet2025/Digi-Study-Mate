@@ -1,8 +1,11 @@
 """MySQL tables (SQLAlchemy 2.0 models). `scripts/init_db.py` creates them; `schema.sql` is generated from them.
 
 documents ─┬─< document_chunks
-           ├─< episodes ─< episode_segments
+           ├─< episodes ─┬─< episode_segments
+           │             ├── listening_progress (1:1)
+           │             └─< flashcards
            └─< defense_question_sets ─< defense_questions ─< defense_attempts
+study_events: one row per study action (listening time, card review, defense answer) for streaks.
 """
 
 import uuid
@@ -11,6 +14,7 @@ from typing import Any
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     DateTime,
     Enum,
     Float,
@@ -80,6 +84,10 @@ class DocumentChunk(TimestampMixin, Base):
 # Audio episodes (Alex & Sam)
 # ---------------------------------------------------------------------------
 
+LESSON_STYLES = ("standard", "recap", "deep_dive", "exam_cram")
+LESSON_LEVELS = ("beginner", "intermediate", "advanced")
+EPISODE_STATUSES = ("queued", "processing", "ready", "failed")
+
 
 class Episode(TimestampMixin, Base):
     __tablename__ = "episodes"
@@ -90,12 +98,35 @@ class Episode(TimestampMixin, Base):
     page_start: Mapped[int | None] = mapped_column(Integer)
     page_end: Mapped[int | None] = mapped_column(Integer)
     target_minutes: Mapped[int] = mapped_column(SmallInteger, nullable=False)
-    total_duration_sec: Mapped[float] = mapped_column(Float, nullable=False)
+    total_duration_sec: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     ai_model: Mapped[str] = mapped_column(String(100), nullable=False)
     tts_provider: Mapped[str] = mapped_column(String(50), nullable=False)
 
+    # Lesson options
+    style: Mapped[str] = mapped_column(
+        Enum(*LESSON_STYLES, name="lesson_style"), nullable=False, default="standard", server_default="standard"
+    )
+    level: Mapped[str] = mapped_column(
+        Enum(*LESSON_LEVELS, name="lesson_level"), nullable=False, default="intermediate", server_default="intermediate"
+    )
+    language: Mapped[str] = mapped_column(String(10), nullable=False, default="en", server_default="en")
+
+    # Background generation: queued → processing (stage + progress %) → ready | failed
+    status: Mapped[str] = mapped_column(
+        Enum(*EPISODE_STATUSES, name="episode_status"), nullable=False, default="queued", server_default="ready"
+    )
+    stage: Mapped[str] = mapped_column(String(30), nullable=False, default="queued", server_default="done")
+    progress: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0, server_default="100")
+    error_message: Mapped[str | None] = mapped_column(String(500))
+
     segments: Mapped[list["EpisodeSegment"]] = relationship(
         back_populates="episode", cascade="all, delete-orphan", passive_deletes=True, order_by="EpisodeSegment.segment_index"
+    )
+    listening: Mapped["ListeningProgress | None"] = relationship(
+        back_populates="episode", cascade="all, delete-orphan", passive_deletes=True, uselist=False
+    )
+    flashcards: Mapped[list["Flashcard"]] = relationship(
+        back_populates="episode", cascade="all, delete-orphan", passive_deletes=True, order_by="Flashcard.id"
     )
 
 
@@ -177,3 +208,56 @@ class DefenseAttempt(TimestampMixin, Base):
     evaluation: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
 
     question: Mapped[DefenseQuestion] = relationship(back_populates="attempts")
+
+
+# ---------------------------------------------------------------------------
+# Listening progress, flashcards, study activity
+# ---------------------------------------------------------------------------
+
+
+class ListeningProgress(Base):
+    """Where the student is in an episode, for "continue where you left off"."""
+
+    __tablename__ = "listening_progress"
+
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id", ondelete="CASCADE"), primary_key=True)
+    position_sec: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    listened_sec: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+
+    episode: Mapped[Episode] = relationship(back_populates="listening")
+
+
+class Flashcard(TimestampMixin, Base):
+    """A spaced-repetition card made from a lesson (SM-2 style scheduling)."""
+
+    __tablename__ = "flashcards"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    episode_id: Mapped[str] = mapped_column(ForeignKey("episodes.id", ondelete="CASCADE"), nullable=False, index=True)
+    front: Mapped[str] = mapped_column(Text, nullable=False)
+    back: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(Enum("checkpoint", "generated", name="flashcard_source"), nullable=False)
+    ease: Mapped[float] = mapped_column(Float, nullable=False, default=2.5)
+    interval_days: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    repetitions: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    lapses: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    due_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now, index=True)
+    last_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    episode: Mapped[Episode] = relationship(back_populates="flashcards")
+
+
+class StudyEvent(Base):
+    """One study action, used for streaks, the activity calendar and totals."""
+
+    __tablename__ = "study_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    kind: Mapped[str] = mapped_column(Enum("listen", "review", "defense", "upload", name="study_event_kind"), nullable=False)
+    #: ID of the episode, flashcard, defense attempt or document involved.
+    ref_id: Mapped[str | None] = mapped_column(String(64))
+    #: Seconds for "listen" events, 1 otherwise.
+    amount: Mapped[float] = mapped_column(Float, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=datetime.now, index=True)

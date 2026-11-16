@@ -1,6 +1,7 @@
 """Study Mate API. Run from the backend folder:  .venv\\Scripts\\uvicorn app.main:app --reload --port 8010"""
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -12,24 +13,44 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from .config import get_settings
 from .db import get_engine
+from .episodes.service import fail_interrupted_jobs
+from .schema import ensure_schema
 from .errors import AppError
-from .routers import ask, defense, documents, episodes
+from .routers import ask, defense, documents, episodes, flashcards, study
 
 logger = logging.getLogger("study_mate")
 
 settings = get_settings()
 settings.media_dir.mkdir(parents=True, exist_ok=True)
 
-app = FastAPI(title="Study Mate API", version="1.0.0")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Bring the database up to date and clean up lessons interrupted by a restart."""
+    try:
+        ensure_schema(get_engine())
+        from sqlalchemy.orm import Session
+
+        with Session(get_engine()) as db:
+            failed = fail_interrupted_jobs(db)
+            if failed:
+                logger.warning("Marked %d interrupted lesson(s) as failed", failed)
+    except SQLAlchemyError as err:
+        logger.error("Database not ready at startup: %s", err)
+    yield
+
+
+app = FastAPI(title="Study Mate API", version="1.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
-for module in (documents, episodes, ask, defense):
+for module in (documents, episodes, ask, defense, flashcards, study):
     app.include_router(module.router)
 
 # Generated MP3s: /media/episodes/<id>/0000-alex.mp3

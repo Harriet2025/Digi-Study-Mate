@@ -100,13 +100,13 @@ function Hero() {
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <Link
-              href="/listen/demo"
+              href="/upload"
               className="inline-flex items-center gap-2.5 rounded-full bg-terracotta px-6 py-3.5 font-medium text-white shadow-md shadow-terracotta/25 transition hover:bg-terracotta-deep focus-visible:ring-2 focus-visible:ring-charcoal focus-visible:ring-offset-2 focus-visible:ring-offset-cream focus-visible:outline-none"
             >
-              <PlayGlyph /> Listen to a demo lesson
+              Upload your notes
             </Link>
-            <Link href="#how-it-works" className="group inline-flex items-center gap-1.5 font-medium text-charcoal">
-              See how it works
+            <Link href="/listen/demo" className="group inline-flex items-center gap-2 font-medium text-charcoal">
+              <PlayGlyph className="size-3.5 text-terracotta" /> Hear a demo lesson
               <span aria-hidden="true" className="transition group-hover:translate-x-0.5">→</span>
             </Link>
           </div>
@@ -541,13 +541,13 @@ function FinalCTA() {
           Your next study session could be a walk.
         </h2>
         <p className="relative mx-auto mt-4 max-w-xl text-lg text-white/85">
-          Hear how Alex and Sam explain database normalisation, then imagine it with your own notes.
+          Upload your slides or notes and get a lesson, flashcards and practice questions in about a minute.
         </p>
         <Link
-          href="/listen/demo"
+          href="/upload"
           className="relative mt-8 inline-flex items-center gap-2.5 rounded-full bg-cream px-7 py-3.5 font-medium text-charcoal shadow-lg transition hover:bg-white focus-visible:ring-2 focus-visible:ring-charcoal focus-visible:ring-offset-2 focus-visible:ring-offset-terracotta focus-visible:outline-none"
         >
-          <PlayGlyph /> Listen to the demo
+          Upload your notes
         </Link>
       </div>
     </section>

@@ -11,7 +11,7 @@ from ..ai.groq import MAX_INPUT_CHARS, groq_json
 from ..config import get_settings
 from ..errors import AppError
 from ..ingestion.service import load_document_text
-from ..models import DefenseAttempt, DefenseQuestion, DefenseQuestionSet
+from ..models import DefenseAttempt, DefenseQuestion, DefenseQuestionSet, StudyEvent
 from .prompts import (
     EVALUATION_SYSTEM_PROMPT,
     QUESTION_GENERATION_SYSTEM_PROMPT,
@@ -235,5 +235,56 @@ def evaluate_answer(db: Session, *, set_id: str, question_key: str, answer: str,
         question_id=question.id, answer_text=answer, input_mode=input_mode, score=score, grade=grade, evaluation=evaluation
     )
     db.add(attempt)
+    db.flush()
+    db.add(StudyEvent(kind="defense", ref_id=attempt.id, amount=1))
     db.commit()
     return {"attemptId": attempt.id, **evaluation}
+
+
+# --- Practice sets --------------------------------------------------------------------------------
+
+
+def list_sets(db: Session) -> list[dict]:
+    sets = db.scalars(select(DefenseQuestionSet).order_by(DefenseQuestionSet.created_at.desc()).limit(100))
+    out = []
+    for qs in sets:
+        best = [max(a.score for a in q.attempts) for q in qs.questions if q.attempts]
+        out.append(
+            {
+                "setId": qs.id,
+                "documentId": qs.document_id,
+                "title": qs.source_title,
+                "createdAt": qs.created_at.isoformat(),
+                "questionCount": len(qs.questions),
+                "answeredCount": len(best),
+                "averageBest": round(sum(best) / len(best)) if best else None,
+            }
+        )
+    return out
+
+
+def get_set(db: Session, set_id: str) -> dict:
+    """The set's public questions, with each question's attempt history (latest evaluation included)."""
+    qs = db.get(DefenseQuestionSet, set_id)
+    if qs is None:
+        raise AppError("NOT_FOUND", 404, "That practice set doesn't exist.")
+    questions = []
+    for q in qs.questions:
+        attempts = sorted(q.attempts, key=lambda a: a.created_at)
+        questions.append(
+            {
+                **public_question(q),
+                "attemptCount": len(attempts),
+                "bestScore": max((a.score for a in attempts), default=None),
+                "latest": {"attemptId": attempts[-1].id, **attempts[-1].evaluation} if attempts else None,
+                "history": [{"score": a.score, "grade": a.grade, "createdAt": a.created_at.isoformat()} for a in attempts],
+            }
+        )
+    return {
+        "setId": qs.id,
+        "documentId": qs.document_id,
+        "title": qs.source_title,
+        "createdAt": qs.created_at.isoformat(),
+        "overallWeaknesses": qs.overall_weaknesses,
+        "questions": questions,
+    }

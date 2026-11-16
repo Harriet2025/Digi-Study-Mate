@@ -36,7 +36,7 @@ export interface AudioManifest {
   scriptId: string;
   title?: string;
   provider: string;
-  createdAt: string;
+  createdAt: string | null;
   totalDurationSec: number;
   manifestUrl: string;
   segments: AudioSegment[];

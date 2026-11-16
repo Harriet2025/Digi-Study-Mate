@@ -13,6 +13,26 @@ LineType = Literal["dialogue", "quiz_checkpoint"]
 WORDS_PER_MINUTE = 150  # spoken English averages roughly 150 words per minute
 MINUTES_PER_CHECKPOINT = 3
 
+#: Languages ElevenLabs multilingual voices handle well.
+LANGUAGES = {"en": "English", "fr": "French", "es": "Spanish", "pt": "Portuguese", "de": "German"}
+
+STYLE_GUIDES = {
+    "standard": "A balanced lesson: explain each idea clearly, with analogies and Sam's questions, at a comfortable pace.",
+    "recap": "A quick recap: cover only the key ideas and how they connect, at a brisk pace, with no tangents. "
+    "Use a single checkpoint near the end.",
+    "deep_dive": "A deep dive: go slowly and thoroughly, with more worked examples and analogies. Have Sam probe edge "
+    "cases, \"what if\" scenarios and common misconceptions.",
+    "exam_cram": "Exam cram: focus on what is most likely to be examined (definitions, key distinctions, processes, typical "
+    "exam questions). Alex points out common exam traps. Make checkpoints frequent, roughly every 90 seconds.",
+}
+
+LEVEL_GUIDES = {
+    "beginner": "The listener is new to this subject: assume no prior knowledge, define every term, and lean on analogies.",
+    "intermediate": "The listener has the basics: define specialist terms briefly and focus on understanding.",
+    "advanced": "The listener already knows the fundamentals: move faster, use precise terminology, and connect ideas to "
+    "deeper implications and related topics.",
+}
+
 
 class ScriptLine(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -61,7 +81,13 @@ Return the script as JSON matching the provided schema: a "lines" array in speak
 
 
 def generate_script(
-    material: str, *, lecture_title: str | None = None, target_minutes: int = 10, audience_level: str = "university"
+    material: str,
+    *,
+    lecture_title: str | None = None,
+    target_minutes: int = 10,
+    style: str = "standard",
+    level: str = "intermediate",
+    language: str = "en",
 ) -> list[ScriptLine]:
     if not 1 <= target_minutes <= 60:
         raise AppError("INVALID_REQUEST", 400, "Target length must be between 1 and 60 minutes.")
@@ -71,13 +97,27 @@ def generate_script(
     if len(material) > MAX_INPUT_CHARS:
         raise AppError("INPUT_TOO_LARGE", 413, "This material is too long for one episode. Pick fewer pages.")
 
+    if style not in STYLE_GUIDES or level not in LEVEL_GUIDES or language not in LANGUAGES:
+        raise AppError("INVALID_REQUEST", 400, "Unknown lesson style, level or language.")
+
     target_words = target_minutes * WORDS_PER_MINUTE
-    checkpoints = max(1, round(target_minutes / MINUTES_PER_CHECKPOINT))
+    minutes_per_checkpoint = 1.5 if style == "exam_cram" else MINUTES_PER_CHECKPOINT
+    checkpoints = 1 if style == "recap" else max(1, round(target_minutes / minutes_per_checkpoint))
+    language_name = LANGUAGES[language]
+    language_rule = (
+        None
+        if language == "en"
+        else f"Language: write every line in natural, spoken {language_name}, even if the material is in another "
+        f"language. Keep the hosts' names Alex and Sam. Technical terms may stay in their usual form, but explain them "
+        f"in {language_name}. The JSON keys and the speaker/type values stay exactly as specified."
+    )
     user = "\n".join(
         line
         for line in [
             f"Lecture title: {lecture_title}" if lecture_title else None,
-            f"Audience: {audience_level} students.",
+            f"Lesson style: {STYLE_GUIDES[style]}",
+            f"Audience: university students. {LEVEL_GUIDES[level]}",
+            language_rule,
             f"Target length: about {target_minutes} minutes of audio (roughly {target_words} spoken words), "
             f"with about {checkpoints} Active Recall Checkpoint{'s' if checkpoints != 1 else ''}. "
             "If the material is too thin to fill that time without padding, make the episode shorter rather than repeating yourself.",

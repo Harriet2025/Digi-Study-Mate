@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from ..auth.scoping import as_current_user
 from ..db import get_db
 from ..flashcards.service import card_json, deck_stats, list_cards
 from ..guides.service import (
@@ -49,7 +50,7 @@ def create(body: CreateGuideBody, background: BackgroundTasks, db: Session = Dep
         level=body.level,
         language=body.language,
     )
-    background.add_task(run_guide_job, guide.id)
+    background.add_task(as_current_user(run_guide_job), guide.id)
     return guide_summary(guide)
 
 

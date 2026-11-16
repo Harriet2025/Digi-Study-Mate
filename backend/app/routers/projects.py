@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Response, U
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from ..auth.scoping import as_current_user
 from ..db import get_db
 from ..errors import AppError
 from ..ingestion.validate import MAX_FILE_BYTES
@@ -51,7 +52,7 @@ async def create(
         slide_count=slideCount,
         duration_minutes=durationMinutes,
     )
-    background.add_task(run_project_job, project.id)
+    background.add_task(as_current_user(run_project_job), project.id)
     return project_summary(project)
 
 

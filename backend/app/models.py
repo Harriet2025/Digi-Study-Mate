@@ -5,6 +5,7 @@ documents ─┬─< document_chunks
            │             ├── listening_progress (1:1)
            │             └─< flashcards
            └─< defense_question_sets ─< defense_questions ─< defense_attempts
+users ─< user_sessions; every top-level row has a user_id (OwnedMixin).
 study_events: one row per study action (listening time, card review, defense answer) for streaks.
 """
 
@@ -43,12 +44,46 @@ class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), nullable=False)
 
 
+class OwnedMixin:
+    """Rows that belong to one user. `auth.scoping` fills user_id on insert and filters every query by it."""
+
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True)
+
+
+# ---------------------------------------------------------------------------
+# Accounts
+# ---------------------------------------------------------------------------
+
+
+class User(TimestampMixin, Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    #: scrypt hash; empty for accounts that only sign in with Google.
+    password_hash: Mapped[str | None] = mapped_column(String(255))
+    #: Google's stable account ID ("sub"), when the user has signed in with Google.
+    google_sub: Mapped[str | None] = mapped_column(String(64), unique=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(500))
+
+
+class UserSession(TimestampMixin, Base):
+    """A signed-in browser. The cookie holds a random token; only its SHA-256 is stored."""
+
+    __tablename__ = "user_sessions"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
 # ---------------------------------------------------------------------------
 # Uploaded documents
 # ---------------------------------------------------------------------------
 
 
-class Document(TimestampMixin, Base):
+class Document(OwnedMixin, TimestampMixin, Base):
     __tablename__ = "documents"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -89,7 +124,7 @@ LESSON_LEVELS = ("beginner", "intermediate", "advanced")
 EPISODE_STATUSES = ("queued", "processing", "ready", "failed")
 
 
-class Episode(TimestampMixin, Base):
+class Episode(OwnedMixin, TimestampMixin, Base):
     __tablename__ = "episodes"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -162,7 +197,7 @@ class EpisodeSegment(Base):
 QUESTION_CATEGORIES = ("logical_gap", "methodology", "assumption", "evidence", "limitations", "technical_depth")
 
 
-class DefenseQuestionSet(TimestampMixin, Base):
+class DefenseQuestionSet(OwnedMixin, TimestampMixin, Base):
     __tablename__ = "defense_question_sets"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -176,7 +211,7 @@ class DefenseQuestionSet(TimestampMixin, Base):
     )
 
 
-class DefenseQuestion(Base):
+class DefenseQuestion(OwnedMixin, Base):
     __tablename__ = "defense_questions"
     __table_args__ = (UniqueConstraint("set_id", "question_key", name="uq_question_key"),)
 
@@ -198,7 +233,7 @@ class DefenseQuestion(Base):
     )
 
 
-class DefenseAttempt(TimestampMixin, Base):
+class DefenseAttempt(OwnedMixin, TimestampMixin, Base):
     __tablename__ = "defense_attempts"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -217,7 +252,7 @@ class DefenseAttempt(TimestampMixin, Base):
 # ---------------------------------------------------------------------------
 
 
-class ListeningProgress(Base):
+class ListeningProgress(OwnedMixin, Base):
     """Where the student is in an episode, for "continue where you left off"."""
 
     __tablename__ = "listening_progress"
@@ -231,7 +266,7 @@ class ListeningProgress(Base):
     episode: Mapped[Episode] = relationship(back_populates="listening")
 
 
-class Flashcard(TimestampMixin, Base):
+class Flashcard(OwnedMixin, TimestampMixin, Base):
     """A spaced-repetition card made from a lesson (SM-2 style scheduling)."""
 
     __tablename__ = "flashcards"
@@ -257,7 +292,7 @@ class Flashcard(TimestampMixin, Base):
 STUDY_EVENT_KINDS = ("listen", "review", "defense", "upload", "quiz", "chat")
 
 
-class StudyEvent(Base):
+class StudyEvent(OwnedMixin, Base):
     """One study action, used for streaks, the activity calendar and totals."""
 
     __tablename__ = "study_events"
@@ -278,7 +313,7 @@ class StudyEvent(Base):
 JOB_STATUSES = ("queued", "processing", "ready", "failed")
 
 
-class StudyGuide(TimestampMixin, Base):
+class StudyGuide(OwnedMixin, TimestampMixin, Base):
     __tablename__ = "study_guides"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -357,7 +392,7 @@ class QuizQuestion(Base):
     guide: Mapped[StudyGuide] = relationship(back_populates="quiz_questions")
 
 
-class QuizAttempt(TimestampMixin, Base):
+class QuizAttempt(OwnedMixin, TimestampMixin, Base):
     __tablename__ = "quiz_attempts"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -388,7 +423,7 @@ class GuideResource(Base):
     guide: Mapped[StudyGuide] = relationship(back_populates="resources")
 
 
-class ChatMessage(TimestampMixin, Base):
+class ChatMessage(OwnedMixin, TimestampMixin, Base):
     __tablename__ = "chat_messages"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -406,7 +441,7 @@ class ChatMessage(TimestampMixin, Base):
 # ---------------------------------------------------------------------------
 
 
-class Project(TimestampMixin, Base):
+class Project(OwnedMixin, TimestampMixin, Base):
     __tablename__ = "projects"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -430,3 +465,7 @@ class Project(TimestampMixin, Base):
     progress: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     error_message: Mapped[str | None] = mapped_column(String(500))
     ai_model: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
+#: Tables whose rows belong to a user.
+OWNED_MODELS = (Document, Episode, DefenseQuestionSet, DefenseQuestion, DefenseAttempt, ListeningProgress, Flashcard, StudyEvent, StudyGuide, QuizAttempt, ChatMessage, Project)

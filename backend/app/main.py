@@ -3,14 +3,14 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from .auth.deps import require_user
 from .config import get_settings
 from .db import get_engine
 from .episodes.service import fail_interrupted_jobs
@@ -18,7 +18,7 @@ from .guides.service import fail_interrupted_guides
 from .projects.service import fail_interrupted_projects
 from .schema import ensure_schema
 from .errors import AppError
-from .routers import ask, defense, documents, episodes, flashcards, guides, projects, study
+from .routers import ask, auth, defense, documents, episodes, flashcards, guides, media, projects, study
 
 logger = logging.getLogger("study_mate")
 
@@ -52,11 +52,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for module in (documents, episodes, guides, projects, ask, defense, flashcards, study):
-    app.include_router(module.router)
+app.include_router(auth.router)
 
-# Generated MP3s: /media/episodes/<id>/0000-alex.mp3
-app.mount("/media", StaticFiles(directory=settings.media_dir), name="media")
+# Everything else needs a signed-in user, and only ever sees that user's data (see auth/scoping.py).
+for module in (documents, episodes, guides, projects, ask, defense, flashcards, study, media):
+    app.include_router(module.router, dependencies=[Depends(require_user)])
 
 
 def _error(status: int, code: str, message: str) -> JSONResponse:

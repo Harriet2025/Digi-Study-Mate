@@ -3,6 +3,7 @@
  * forwards to the backend (see next.config.ts). Types mirror backend/app responses.
  */
 
+import { redirectToLogin } from "./auth";
 import type { AudioSegment } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -323,6 +324,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const err = (data as { error?: { message?: string; code?: string } } | null)?.error;
+    if (res.status === 401 && err?.code === "UNAUTHENTICATED") redirectToLogin();
     const message =
       err?.message ??
       (res.status === 404 ? "Not found." : res.status >= 500 ? "The server ran into a problem. Please try again." : "Request failed.");
@@ -422,6 +424,7 @@ export function uploadDocument(file: File, onProgress: (fraction: number) => voi
       if (xhr.status >= 200 && xhr.status < 300) resolve(data as UploadedDocument);
       else {
         const err = (data as { error?: { message?: string; code?: string } } | null)?.error;
+        if (xhr.status === 401 && err?.code === "UNAUTHENTICATED") redirectToLogin();
         reject(new ApiError(err?.message ?? "The upload failed. Please try again.", xhr.status, err?.code ?? "UNKNOWN"));
       }
     };

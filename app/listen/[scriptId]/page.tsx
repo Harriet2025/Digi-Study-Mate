@@ -1,19 +1,24 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 import AudioPlayer from "@/components/AudioPlayer";
 import LessonBuilding from "@/components/lesson/LessonBuilding";
 import LessonToolbar from "@/components/lesson/LessonToolbar";
 import { Page, Pill } from "@/components/ui";
 import { LANGUAGE_OPTIONS, LEVEL_OPTIONS, styleLabel, type EpisodeManifest } from "@/lib/api";
+import { loginUrl } from "@/lib/auth";
 import { BACKEND_URL } from "@/lib/types";
 
 export const metadata = { title: "Listen · Study Mate" };
 
-type LoadResult = { ok: true; episode: EpisodeManifest } | { ok: false; reason: "not_found" | "unavailable" };
+type LoadResult = { ok: true; episode: EpisodeManifest } | { ok: false; reason: "not_found" | "unavailable" | "signed_out" };
 
 async function loadEpisode(scriptId: string): Promise<LoadResult> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/episodes/${scriptId}`, { cache: "no-store" });
+    // Server-side request: pass the visitor's session cookie on to the API.
+    const cookie = (await cookies()).toString();
+    const res = await fetch(`${BACKEND_URL}/api/episodes/${scriptId}`, { cache: "no-store", headers: { cookie } });
+    if (res.status === 401) return { ok: false, reason: "signed_out" };
     if (res.status === 404) return { ok: false, reason: "not_found" };
     if (!res.ok) return { ok: false, reason: "unavailable" };
     return { ok: true, episode: (await res.json()) as EpisodeManifest };
@@ -30,6 +35,7 @@ export default async function ListenPage({ params }: { params: Promise<{ scriptI
 
   const result = await loadEpisode(scriptId);
   if (!result.ok && result.reason === "not_found") notFound();
+  if (!result.ok && result.reason === "signed_out") redirect(loginUrl(`/listen/${scriptId}`));
 
   if (!result.ok) {
     return (

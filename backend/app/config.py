@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     #: With a YouTube Data API key, resources show real videos; without one, YouTube search links.
     youtube_api_key: str = ""
 
+    # --- Accounts -------------------------------------------------------------
+    #: The website's public address (no trailing slash). Used for the Google redirect and secure cookies.
+    app_url: str = "http://localhost:3000"
+    #: "Continue with Google" appears when both are set (Google Cloud console → OAuth client, type "Web application").
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    session_days: int = Field(default=30, ge=1, le=365)
+
     # --- Files & web ---------------------------------------------------------
     media_dir: Path = BACKEND_DIR / "media"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]

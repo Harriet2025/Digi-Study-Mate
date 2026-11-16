@@ -19,6 +19,8 @@ The website forwards `/api/*` and `/media/*` to the API, so the only thing linki
    | `ELEVENLABS_API_KEY` | your ElevenLabs key |
    | `YOUTUBE_API_KEY` | optional |
    | `GROQ_TPM_LIMIT` | `8000` on Groq's free tier |
+   | `APP_URL` | your Vercel address, e.g. `https://study-mate.vercel.app` (needed for secure logins and Google) |
+   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | optional, for "Continue with Google" (see below) |
 
 5. Add a disk for audio, uploads and decks: right-click the API service, choose **Attach Volume**, and set the mount path to `/data`. The Dockerfile already stores files in `/data/media`.
 6. Go to **Settings → Networking → Generate Domain**. Railway gives you a domain like `https://study-mate-api-production.up.railway.app`.
@@ -32,8 +34,24 @@ The website forwards `/api/*` and `/media/*` to the API, so the only thing linki
 
 Every push to `main` redeploys both sites automatically.
 
+## 3. "Continue with Google" (optional)
+
+1. Go to <https://console.cloud.google.com/apis/credentials> and create a project if asked.
+2. Open **OAuth consent screen**. Choose **External**, enter the app name "Study Mate" and your email, and save.
+3. Go to **Credentials → Create credentials → OAuth client ID → Web application**.
+4. Under **Authorised redirect URIs**, add:
+   - `http://localhost:3000/api/auth/google/callback` (on your laptop)
+   - `https://<your-vercel-address>/api/auth/google/callback` (live site)
+5. Copy the **Client ID** and **Client secret** into `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`:
+   - on your laptop, in `.env.local`;
+   - for the live site, in the Railway variables.
+6. Restart the backend. A "Continue with Google" button appears on the login and sign-up pages.
+
+While the consent screen is in **Testing** mode, only the Google accounts you add as test users can sign in. Click **Publish app** to open it to everyone.
+
 ## Notes
 
+- The **first account** created takes over any lessons made before accounts existed.
 - Keys go only in the Railway and Vercel dashboards, never in the repo.
 - Data in your local MySQL database is **not** copied over. The hosted app starts empty.
 - Long jobs (lessons, podcasts, decks) run in the background on Railway, and the website checks their progress, so Vercel's request time limits don't affect them.

@@ -6,6 +6,7 @@ import json
 import pytest
 
 from .conftest import FIXTURES
+from .test_pipeline import FAKE_DECK as FAKE_FLASHCARD_DECK, FAKE_SCRIPT
 
 FAKE_LESSON = {
     "title": "Data, Information and DBMS",
@@ -115,6 +116,8 @@ def fakes(monkeypatch):
                 "slide_deck": FAKE_DECK,
                 "defense_pack": FAKE_DEFENSE,
                 "defense_question_set": FAKE_QUESTIONS,
+                "audio_script": FAKE_SCRIPT,
+                "flashcard_deck": FAKE_FLASHCARD_DECK,
             }[name]
         )
 
@@ -248,3 +251,44 @@ def test_strict_schema_keeps_fields_named_title():
     assert "title" in schema["properties"] and "title" in schema["required"]
     section = schema["$defs"]["_Section"]
     assert "title" in section["properties"] and section["additionalProperties"] is False
+
+
+def test_users_only_see_their_own_data(client, make_client):
+    """Everything one student makes is invisible to another, by ID or in any list."""
+    doc_id = _upload(client)
+    guide_id = client.post("/api/guides", json={"documentId": doc_id, "pageStart": 1, "pageEnd": 3}).json()["guideId"]
+    r = client.post("/api/episodes", json={"documentId": doc_id, "pageStart": 1, "pageEnd": 3, "targetMinutes": 3})
+    episode = client.get(f"/api/episodes/{r.json()['scriptId']}").json()
+    assert episode["status"] == "ready"
+    audio_url = episode["segments"][0]["url"]
+    project_id = client.post("/api/projects", data={"title": "Mine", "instructions": "Present glycolysis."}).json()["projectId"]
+    card = client.get(f"/api/flashcards?guideId={guide_id}").json()["cards"][0]
+    assert client.get(audio_url).status_code == 200
+
+    other = make_client()
+    # Lists are empty for the new student...
+    lib = other.get("/api/library").json()
+    assert lib["documents"] == [] and lib["continueListening"] == [] and lib["flashcards"]["total"] == 0
+    assert other.get("/api/documents").json() == []
+    assert other.get("/api/projects").json() == []
+    assert other.get("/api/defense/sets").json() == []
+    assert other.get("/api/flashcards?due=false").json()["cards"] == []
+    insights = other.get("/api/insights").json()
+    assert insights["totals"]["documents"] == 0 and insights["totals"]["lessons"] == 0
+    # ...and nothing can be opened, changed or deleted by ID.
+    assert other.get(f"/api/documents/{doc_id}").status_code == 404
+    assert other.get(f"/api/guides/{guide_id}").status_code == 404
+    assert other.get(f"/api/episodes/{episode['scriptId']}").status_code == 404
+    assert other.get(f"/api/projects/{project_id}").status_code == 404
+    assert other.get(f"/api/projects/{project_id}/download").status_code == 404
+    assert other.get(audio_url).status_code == 404
+    assert other.post(f"/api/flashcards/{card['id']}/review", json={"rating": "easy"}).status_code == 404
+    assert other.post(f"/api/guides/{guide_id}/chat", json={"message": "hi"}).status_code == 404
+    assert other.post("/api/guides", json={"documentId": doc_id}).status_code == 404
+    assert other.delete(f"/api/documents/{doc_id}").status_code == 404
+    assert other.delete(f"/api/projects/{project_id}").status_code == 404
+
+    # The owner still has everything.
+    assert client.get(f"/api/documents/{doc_id}").status_code == 200
+    assert client.get(f"/api/projects/{project_id}").status_code == 200
+    assert any(c["id"] == card["id"] for c in client.get(f"/api/flashcards?guideId={guide_id}&due=false").json()["cards"])

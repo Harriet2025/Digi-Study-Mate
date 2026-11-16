@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Avatar } from "@/components/auth/AccountMenu";
+import { useCurrentUser } from "@/components/auth/useCurrentUser";
+import { logout } from "@/lib/auth";
 import { APP_NAV, isActive } from "./NavLinks";
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const user = useCurrentUser();
 
   // Close the menu after navigating.
   useEffect(() => setOpen(false), [pathname]);
@@ -43,6 +47,33 @@ export default function MobileNav() {
               </li>
             ))}
           </ul>
+          <div className="mt-3 border-t border-sand pt-3">
+            {user ? (
+              <div className="flex items-center gap-3 px-4 py-2">
+                <Avatar user={user} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{user.name}</p>
+                  <p className="truncate text-sm text-stone">{user.email}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void logout()}
+                  className="rounded-full px-3 py-2 text-sm font-medium text-terracotta-deep hover:bg-terracotta-soft"
+                >
+                  Log out
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <Link href="/login" className="rounded-full border border-sand px-4 py-3 text-center font-medium">
+                  Log in
+                </Link>
+                <Link href="/signup" className="rounded-full bg-terracotta px-4 py-3 text-center font-medium text-white">
+                  Sign up free
+                </Link>
+              </div>
+            )}
+          </div>
         </nav>
       )}
     </div>

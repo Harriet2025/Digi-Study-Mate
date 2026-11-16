@@ -4,6 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Response
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 
+from ..auth.scoping import as_current_user
 from ..db import get_db
 from ..episodes.service import (
     delete_episode,
@@ -55,7 +56,7 @@ def create(body: CreateEpisodeBody, background: BackgroundTasks, db: Session = D
         language=body.language,
         guide_id=body.guideId,
     )
-    background.add_task(run_episode_job, episode.id)
+    background.add_task(as_current_user(run_episode_job), episode.id)
     return episode_summary(episode)
 
 

@@ -42,8 +42,8 @@ export default function LessonBuilding({ initial }: { initial: EpisodeManifest }
   if (episode.status === "failed") {
     return (
       <Card className="mx-auto max-w-xl py-10 text-center">
-        <p className="font-serif text-2xl font-semibold">This lesson couldn&apos;t be made</p>
-        <p className="mt-2 text-stone">{episode.error ?? "Something went wrong. Please try again."}</p>
+        <p className="font-display text-2xl font-semibold">This lesson couldn&apos;t be made</p>
+        <p className="mt-2 text-subtle">{episode.error ?? "Something went wrong. Please try again."}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           {episode.documentId && <LinkButton href={`/upload?documentId=${episode.documentId}`}>Try again</LinkButton>}
           <LinkButton href="/library" variant="secondary">
@@ -58,17 +58,17 @@ export default function LessonBuilding({ initial }: { initial: EpisodeManifest }
   return (
     <Card className="mx-auto max-w-xl p-8 sm:p-10">
       <div className="flex items-center gap-4">
-        <div className="relative grid size-14 shrink-0 place-items-center rounded-2xl bg-terracotta text-white">
+        <div className="relative grid size-14 shrink-0 place-items-center rounded-2xl bg-brand text-white">
           <Spinner className="size-7" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-[0.16em] text-terracotta-deep uppercase">Making your lesson</p>
-          <h1 className="truncate font-serif text-2xl font-semibold">{episode.title}</h1>
+          <p className="text-xs font-semibold tracking-[0.16em] text-brand-deep uppercase">Making your lesson</p>
+          <h1 className="truncate font-display text-2xl font-semibold">{episode.title}</h1>
         </div>
       </div>
 
       <ProgressBar value={episode.progress} className="mt-8" />
-      <p className="mt-2 text-right text-sm text-stone tabular-nums" aria-live="polite">
+      <p className="mt-2 text-right text-sm text-subtle tabular-nums" aria-live="polite">
         {episode.progress}%
       </p>
 
@@ -79,20 +79,20 @@ export default function LessonBuilding({ initial }: { initial: EpisodeManifest }
             <li key={stage.key} className="flex items-center gap-3">
               <span
                 className={`grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold ${
-                  state === "done" ? "bg-sage text-white" : state === "current" ? "bg-terracotta-soft text-terracotta-deep" : "bg-cream-deep text-stone"
+                  state === "done" ? "bg-success text-white" : state === "current" ? "bg-brand-soft text-brand-deep" : "bg-muted text-subtle"
                 }`}
               >
                 {state === "done" ? "✓" : state === "current" ? <Spinner className="size-3.5" /> : i + 1}
               </span>
-              <span className={state === "todo" ? "text-stone" : "font-medium"}>{stage.label}</span>
+              <span className={state === "todo" ? "text-subtle" : "font-medium"}>{stage.label}</span>
             </li>
           );
         })}
       </ol>
 
-      <p className="mt-8 rounded-2xl bg-cream-deep px-4 py-3 text-sm text-stone">
+      <p className="mt-8 rounded-2xl bg-muted px-4 py-3 text-sm text-subtle">
         This usually takes under a minute for a short lesson. You can leave this page; the lesson keeps being made and will be
-        waiting in your <Link href="/library" className="font-medium text-terracotta-deep hover:underline">library</Link>.
+        waiting in your <Link href="/library" className="font-medium text-brand-deep hover:underline">library</Link>.
       </p>
       {connectionError && (
         <div className="mt-4">

@@ -18,15 +18,15 @@ export function Avatar({ user, className = "size-9" }: { user: User; className?:
     return <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" className={`${className} rounded-full object-cover`} />;
   }
   return (
-    <span className={`${className} grid place-items-center rounded-full bg-sage-soft text-sm font-semibold text-sage`} aria-hidden="true">
+    <span className={`${className} grid place-items-center rounded-full bg-success-soft text-sm font-semibold text-success`} aria-hidden="true">
       {initials || "?"}
     </span>
   );
 }
 
 const PRIMARY =
-  "items-center gap-1.5 rounded-full bg-terracotta px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-terracotta-deep " +
-  "focus-visible:ring-2 focus-visible:ring-charcoal focus-visible:ring-offset-2 focus-visible:ring-offset-cream focus-visible:outline-none";
+  "items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-brand-deep " +
+  "focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-canvas focus-visible:outline-none";
 
 /** Header actions: "Log in / Sign up" when signed out; "+ Study notes" and the account menu when signed in. */
 export default function AccountMenu() {
@@ -54,7 +54,7 @@ export default function AccountMenu() {
   if (user === null) {
     return (
       <div className="hidden items-center gap-1 sm:flex">
-        <Link href="/login" className="rounded-full px-4 py-2 text-sm font-medium text-charcoal hover:bg-cream-deep">
+        <Link href="/login" className="rounded-full px-4 py-2 text-sm font-medium text-ink hover:bg-muted">
           Log in
         </Link>
         <Link href="/signup" className={`inline-flex ${PRIMARY}`}>
@@ -76,17 +76,17 @@ export default function AccountMenu() {
           aria-expanded={open}
           aria-haspopup="menu"
           aria-label={`Account: ${user.name}`}
-          className="rounded-full ring-offset-2 ring-offset-cream transition hover:ring-2 hover:ring-sand focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:outline-none"
+          className="rounded-full ring-offset-2 ring-offset-canvas transition hover:ring-2 hover:ring-line focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
         >
           <Avatar user={user} />
         </button>
         {open && (
-          <div role="menu" className="absolute right-0 mt-2 w-64 overflow-hidden rounded-2xl border border-sand bg-cream shadow-xl">
-            <div className="flex items-center gap-3 border-b border-sand px-4 py-3">
+          <div role="menu" className="absolute right-0 mt-2 w-64 overflow-hidden rounded-2xl border border-line bg-canvas shadow-xl">
+            <div className="flex items-center gap-3 border-b border-line px-4 py-3">
               <Avatar user={user} className="size-10" />
               <div className="min-w-0">
                 <p className="truncate font-semibold">{user.name}</p>
-                <p className="truncate text-sm text-stone">{user.email}</p>
+                <p className="truncate text-sm text-subtle">{user.email}</p>
               </div>
             </div>
             <div className="p-1.5">
@@ -94,7 +94,7 @@ export default function AccountMenu() {
                 { href: "/library", label: "My library" },
                 { href: "/progress", label: "My progress" },
               ].map((item) => (
-                <Link key={item.href} role="menuitem" href={item.href} className="block rounded-xl px-3 py-2 text-sm hover:bg-cream-deep">
+                <Link key={item.href} role="menuitem" href={item.href} className="block rounded-xl px-3 py-2 text-sm hover:bg-muted">
                   {item.label}
                 </Link>
               ))}
@@ -102,7 +102,7 @@ export default function AccountMenu() {
                 type="button"
                 role="menuitem"
                 onClick={() => void logout()}
-                className="block w-full rounded-xl px-3 py-2 text-left text-sm text-terracotta-deep hover:bg-terracotta-soft"
+                className="block w-full rounded-xl px-3 py-2 text-left text-sm text-brand-deep hover:bg-brand-soft"
               >
                 Log out
               </button>

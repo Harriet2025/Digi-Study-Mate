@@ -45,29 +45,29 @@ export default function PracticeSession({ setId, initialQuestionId }: { setId: s
 
   return (
     <div>
-      <Link href="/practice" className="text-sm font-medium text-stone hover:text-charcoal">
+      <Link href="/practice" className="text-sm font-medium text-subtle hover:text-ink">
         ← All practice sets
       </Link>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold tracking-[0.18em] text-terracotta-deep uppercase">Defense practice</p>
-          <h1 className="mt-1 font-serif text-4xl font-semibold text-balance">{set.title ?? "Practice set"}</h1>
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">Defense practice</p>
+          <h1 className="mt-1 font-display text-4xl font-semibold text-balance">{set.title ?? "Practice set"}</h1>
         </div>
-        <p className="text-sm text-stone">
+        <p className="text-sm text-subtle">
           {answered} of {set.questions.length} questions answered
         </p>
       </div>
 
       {set.overallWeaknesses.length > 0 && (
-        <details className="group mt-6 rounded-3xl border border-sand bg-cream-deep/60 p-5">
+        <details className="group mt-6 rounded-2xl border border-line bg-muted/60 p-5">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold">
             What the panel thinks needs strengthening
-            <span className="text-terracotta transition group-open:rotate-45" aria-hidden="true">+</span>
+            <span className="text-brand transition group-open:rotate-45" aria-hidden="true">+</span>
           </summary>
-          <ul className="mt-3 space-y-2 text-stone">
+          <ul className="mt-3 space-y-2 text-subtle">
             {set.overallWeaknesses.map((w) => (
               <li key={w} className="flex gap-2">
-                <span className="text-terracotta" aria-hidden="true">•</span>
+                <span className="text-brand" aria-hidden="true">•</span>
                 {w}
               </li>
             ))}
@@ -75,7 +75,7 @@ export default function PracticeSession({ setId, initialQuestionId }: { setId: s
         </details>
       )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[280px_1fr]">
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
         {/* Question list */}
         <nav aria-label="Questions">
           <ol className="flex gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
@@ -86,15 +86,15 @@ export default function PracticeSession({ setId, initialQuestionId }: { setId: s
                   onClick={() => setActiveId(q.id)}
                   aria-current={q.id === active.id ? "true" : undefined}
                   className={`flex w-56 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition lg:w-full ${
-                    q.id === active.id ? "border-terracotta bg-terracotta-soft/50" : "border-sand bg-cream hover:border-terracotta/40"
+                    q.id === active.id ? "border-brand bg-brand-soft/50" : "border-line bg-canvas hover:border-brand/40"
                   }`}
                 >
-                  <span className="font-serif text-lg font-semibold text-terracotta">{i + 1}</span>
+                  <span className="font-display text-lg font-semibold text-brand">{i + 1}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold">{CATEGORY_LABELS[q.category]}</span>
-                    <span className="block truncate text-xs text-stone">{q.sourceReference}</span>
+                    <span className="block truncate text-xs text-subtle">{q.sourceReference}</span>
                   </span>
-                  {q.bestScore !== null ? <Pill tone={q.bestScore >= 65 ? "sage" : "terracotta"}>{q.bestScore}</Pill> : null}
+                  {q.bestScore !== null ? <Pill tone={q.bestScore >= 65 ? "success" : "brand"}>{q.bestScore}</Pill> : null}
                 </button>
               </li>
             ))}
@@ -160,15 +160,15 @@ function QuestionPanel({
 
   return (
     <div className="space-y-5">
-      <Card className="bg-charcoal p-7 text-cream sm:p-8">
+      <Card className="bg-ink p-7 text-canvas sm:p-8">
         <div className="flex flex-wrap items-center gap-2">
           <Pill tone="warning">Question {index + 1}</Pill>
           <Pill tone="glass">{CATEGORY_LABELS[question.category]}</Pill>
-          <span className="text-xs text-cream/60">{question.sourceReference}</span>
+          <span className="text-xs text-canvas/60">{question.sourceReference}</span>
         </div>
-        <p className="mt-4 font-serif text-2xl leading-snug text-balance sm:text-[1.7rem]">“{question.question}”</p>
+        <p className="mt-4 font-display text-2xl leading-snug text-balance sm:text-[1.7rem]">“{question.question}”</p>
         {question.history.length > 0 && (
-          <p className="mt-4 text-sm text-cream/60">
+          <p className="mt-4 text-sm text-canvas/60">
             {question.history.length} attempt{question.history.length === 1 ? "" : "s"} · best {question.bestScore}/100
           </p>
         )}
@@ -189,7 +189,7 @@ function QuestionPanel({
             maxLength={10000}
             disabled={grading || recorder.state !== "idle"}
             placeholder="Answer as you would to the panel: state your position, justify it, and mention the specifics."
-            className="w-full resize-y rounded-2xl border border-sand bg-white px-4 py-3 leading-relaxed focus:border-terracotta focus:ring-2 focus:ring-terracotta/30 focus:outline-none disabled:opacity-60"
+            className="w-full resize-y rounded-2xl border border-line bg-white px-4 py-3 leading-relaxed focus:border-brand focus:ring-2 focus:ring-brand/30 focus:outline-none disabled:opacity-60"
           />
           {(error || recorder.error) && <ErrorNote>{error ?? recorder.error}</ErrorNote>}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -198,7 +198,7 @@ function QuestionPanel({
               onClick={toggleRecording}
               disabled={grading || recorder.state === "starting"}
               className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
-                recorder.state === "recording" ? "bg-terracotta-deep text-white" : "border border-sand bg-cream hover:border-terracotta/50"
+                recorder.state === "recording" ? "bg-brand-deep text-white" : "border border-line bg-canvas hover:border-brand/50"
               }`}
             >
               {recorder.state === "recording" ? (
@@ -218,7 +218,7 @@ function QuestionPanel({
             </Button>
           </div>
           {result && (
-            <button type="button" onClick={() => setMode("result")} className="text-sm font-medium text-terracotta-deep hover:underline">
+            <button type="button" onClick={() => setMode("result")} className="text-sm font-medium text-brand-deep hover:underline">
               See your last result
             </button>
           )}
@@ -229,9 +229,9 @@ function QuestionPanel({
 }
 
 const STATUS_STYLE: Record<PointStatus, { label: string; className: string; icon: string }> = {
-  covered: { label: "Covered", className: "bg-sage-soft text-sage", icon: "✓" },
-  partial: { label: "Partly", className: "bg-terracotta-soft text-terracotta-deep", icon: "~" },
-  missing: { label: "Missing", className: "bg-cream-deep text-stone", icon: "✕" },
+  covered: { label: "Covered", className: "bg-success-soft text-success", icon: "✓" },
+  partial: { label: "Partly", className: "bg-brand-soft text-brand-deep", icon: "~" },
+  missing: { label: "Missing", className: "bg-muted text-subtle", icon: "✕" },
 };
 
 function ResultView({ result, weakness, onRetry }: { result: Evaluation; weakness: string; onRetry: () => void }) {
@@ -241,7 +241,7 @@ function ResultView({ result, weakness, onRetry }: { result: Evaluation; weaknes
         <ScoreRing score={result.score} />
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Pill tone={result.score >= 65 ? "sage" : "terracotta"}>{GRADE_LABEL[result.grade]}</Pill>
+            <Pill tone={result.score >= 65 ? "success" : "brand"}>{GRADE_LABEL[result.grade]}</Pill>
             <Pill>{result.inputMode === "spoken" ? "Spoken answer" : "Typed answer"}</Pill>
           </div>
           <p className="mt-3 leading-relaxed">{result.feedback}</p>
@@ -249,7 +249,7 @@ function ResultView({ result, weakness, onRetry }: { result: Evaluation; weaknes
       </Card>
 
       <Card>
-        <h3 className="font-serif text-xl font-semibold">Key points the panel listens for</h3>
+        <h3 className="font-display text-xl font-semibold">Key points the panel listens for</h3>
         <ul className="mt-4 space-y-3">
           {result.keyPointResults.map((k) => {
             const s = STATUS_STYLE[k.status];
@@ -262,8 +262,8 @@ function ResultView({ result, weakness, onRetry }: { result: Evaluation; weaknes
                   <p className="font-medium">
                     {k.point} {k.importance === "core" && <Pill tone="dark">Core</Pill>}
                   </p>
-                  <p className="text-sm text-stone">{k.comment}</p>
-                  {k.evidence && <p className="mt-1 border-l-2 border-sand pl-3 text-sm text-stone italic">“{k.evidence}”</p>}
+                  <p className="text-sm text-subtle">{k.comment}</p>
+                  {k.evidence && <p className="mt-1 border-l-2 border-line pl-3 text-sm text-subtle italic">“{k.evidence}”</p>}
                 </div>
               </li>
             );
@@ -271,33 +271,33 @@ function ResultView({ result, weakness, onRetry }: { result: Evaluation; weaknes
         </ul>
       </Card>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {result.missingTechnicalDetails.length > 0 && (
-          <ListCard title="Technical details to add" items={result.missingTechnicalDetails} tone="terracotta" />
+          <ListCard title="Technical details to add" items={result.missingTechnicalDetails} tone="brand" />
         )}
-        {result.strengths.length > 0 && <ListCard title="What you did well" items={result.strengths} tone="sage" />}
-        {result.misconceptions.length > 0 && <ListCard title="Things to correct" items={result.misconceptions} tone="terracotta" />}
+        {result.strengths.length > 0 && <ListCard title="What you did well" items={result.strengths} tone="success" />}
+        {result.misconceptions.length > 0 && <ListCard title="Things to correct" items={result.misconceptions} tone="brand" />}
         <ListCard title="A stronger answer would…" items={result.improvedAnswerOutline} tone="neutral" ordered />
       </div>
 
-      <Card className="bg-cream-deep/60">
-        <p className="text-xs font-semibold tracking-[0.16em] text-terracotta-deep uppercase">The panel&apos;s likely follow-up</p>
-        <p className="mt-2 font-serif text-xl">“{result.followUpQuestion}”</p>
-        <p className="mt-3 text-sm text-stone">
-          <span className="font-semibold text-charcoal">Why they asked:</span> {weakness}
+      <Card className="bg-muted/60">
+        <p className="text-xs font-semibold tracking-[0.16em] text-brand-deep uppercase">The panel&apos;s likely follow-up</p>
+        <p className="mt-2 font-display text-xl">“{result.followUpQuestion}”</p>
+        <p className="mt-3 text-sm text-subtle">
+          <span className="font-semibold text-ink">Why they asked:</span> {weakness}
         </p>
       </Card>
 
-      <details className="group rounded-3xl border border-sand bg-cream p-5">
+      <details className="group rounded-2xl border border-line bg-canvas p-5">
         <summary className="flex cursor-pointer list-none items-center justify-between font-semibold">
           See the ideal answer
-          <span className="text-terracotta transition group-open:rotate-45" aria-hidden="true">+</span>
+          <span className="text-brand transition group-open:rotate-45" aria-hidden="true">+</span>
         </summary>
-        <p className="mt-3 leading-relaxed text-stone">{result.rubric.idealAnswerSummary}</p>
+        <p className="mt-3 leading-relaxed text-subtle">{result.rubric.idealAnswerSummary}</p>
         {result.rubric.redFlags.length > 0 && (
           <>
             <p className="mt-4 text-sm font-semibold">Answers that lose marks</p>
-            <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-stone">
+            <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-subtle">
               {result.rubric.redFlags.map((r) => (
                 <li key={r}>{r}</li>
               ))}
@@ -313,8 +313,8 @@ function ResultView({ result, weakness, onRetry }: { result: Evaluation; weaknes
   );
 }
 
-function ListCard({ title, items, tone, ordered = false }: { title: string; items: string[]; tone: "sage" | "terracotta" | "neutral"; ordered?: boolean }) {
-  const dot = { sage: "text-sage", terracotta: "text-terracotta", neutral: "text-stone" }[tone];
+function ListCard({ title, items, tone, ordered = false }: { title: string; items: string[]; tone: "success" | "brand" | "neutral"; ordered?: boolean }) {
+  const dot = { success: "text-success", brand: "text-brand", neutral: "text-subtle" }[tone];
   const List = ordered ? "ol" : "ul";
   return (
     <Card>
@@ -335,11 +335,11 @@ function ListCard({ title, items, tone, ordered = false }: { title: string; item
 
 function ScoreRing({ score }: { score: number }) {
   const circumference = 2 * Math.PI * 42;
-  const color = score >= 65 ? "var(--color-sage)" : "var(--color-terracotta)";
+  const color = score >= 65 ? "var(--color-success)" : "var(--color-brand)";
   return (
-    <div className="relative grid size-28 shrink-0 place-items-center">
+    <div className=" ">
       <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90" aria-hidden="true">
-        <circle cx="50" cy="50" r="42" fill="none" stroke="var(--color-sand)" strokeWidth="9" />
+        <circle cx="50" cy="50" r="42" fill="none" stroke="var(--color-line)" strokeWidth="9" />
         <circle
           cx="50"
           cy="50"
@@ -354,8 +354,8 @@ function ScoreRing({ score }: { score: number }) {
         />
       </svg>
       <p className="text-center">
-        <span className="block font-serif text-3xl leading-none font-semibold">{score}</span>
-        <span className="text-xs text-stone">/ 100</span>
+        <span className="block font-display text-3xl leading-none font-semibold">{score}</span>
+        <span className="text-xs text-subtle">/ 100</span>
       </p>
     </div>
   );

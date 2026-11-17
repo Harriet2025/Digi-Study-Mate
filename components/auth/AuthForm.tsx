@@ -26,8 +26,8 @@ function GoogleLogo() {
 }
 
 const INPUT =
-  "mt-1.5 w-full rounded-2xl border border-sand bg-white/80 px-4 py-3 text-base text-charcoal placeholder:text-stone/60 " +
-  "focus:border-terracotta focus:ring-2 focus:ring-terracotta/25 focus:outline-none";
+  "mt-1.5 w-full rounded-2xl border border-line bg-white/80 px-4 py-3 text-base text-ink placeholder:text-subtle/60 " +
+  "focus:border-brand focus:ring-2 focus:ring-brand/25 focus:outline-none";
 
 export default function AuthForm({ mode, next, error }: { mode: Mode; next?: string; error?: string }) {
   const destination = safeNext(next);
@@ -76,8 +76,8 @@ export default function AuthForm({ mode, next, error }: { mode: Mode; next?: str
 
   return (
     <div className="w-full max-w-md">
-      <h1 className="font-serif text-4xl font-semibold tracking-tight">{isSignup ? "Create your account" : "Welcome back"}</h1>
-      <p className="mt-2 text-stone">
+      <h1 className="font-display text-4xl font-semibold tracking-tight">{isSignup ? "Create your account" : "Welcome back"}</h1>
+      <p className="mt-2 text-subtle">
         {isSignup ? "Your lessons, flashcards and projects stay private to you." : "Log in to pick up where you left off."}
       </p>
 
@@ -85,15 +85,15 @@ export default function AuthForm({ mode, next, error }: { mode: Mode; next?: str
         <>
           <a
             href={`/api/auth/google?next=${encodeURIComponent(destination)}`}
-            className="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-sand bg-white px-5 py-3 font-medium text-charcoal shadow-sm transition hover:border-stone/40 hover:bg-cream focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:outline-none"
+            className="mt-8 flex w-full items-center justify-center gap-3 rounded-full border border-line bg-white px-5 py-3 font-medium text-ink shadow-sm transition hover:border-subtle/40 hover:bg-canvas focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
           >
             <GoogleLogo />
             Continue with Google
           </a>
-          <div className="my-6 flex items-center gap-3 text-xs font-medium tracking-wide text-stone uppercase">
-            <span className="h-px flex-1 bg-sand" />
+          <div className="my-6 flex items-center gap-3 text-xs font-medium tracking-wide text-subtle uppercase">
+            <span className="h-px flex-1 bg-line" />
             or with email
-            <span className="h-px flex-1 bg-sand" />
+            <span className="h-px flex-1 bg-line" />
           </div>
         </>
       )}
@@ -123,7 +123,7 @@ export default function AuthForm({ mode, next, error }: { mode: Mode; next?: str
             <button
               type="button"
               onClick={() => setShowPassword((s) => !s)}
-              className="text-xs font-medium text-stone hover:text-charcoal"
+              className="text-xs font-medium text-subtle hover:text-ink"
               aria-pressed={showPassword}
             >
               {showPassword ? "Hide" : "Show"}
@@ -139,11 +139,11 @@ export default function AuthForm({ mode, next, error }: { mode: Mode; next?: str
             minLength={isSignup ? 8 : undefined}
             maxLength={200}
           />
-          {isSignup && <span className="mt-1.5 block text-xs font-normal text-stone">At least 8 characters.</span>}
+          {isSignup && <span className="mt-1.5 block text-xs font-normal text-subtle">At least 8 characters.</span>}
         </label>
 
         {message && (
-          <p role="alert" className="rounded-2xl border border-terracotta/30 bg-terracotta-soft/60 px-4 py-3 text-sm text-terracotta-deep">
+          <p role="alert" className="rounded-2xl border border-brand/30 bg-brand-soft/60 px-4 py-3 text-sm text-brand-deep">
             {message}
           </p>
         )}
@@ -151,16 +151,16 @@ export default function AuthForm({ mode, next, error }: { mode: Mode; next?: str
         <button
           type="submit"
           disabled={busy}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-terracotta px-5 py-3 font-medium text-white shadow-sm shadow-terracotta/25 transition hover:bg-terracotta-deep focus-visible:ring-2 focus-visible:ring-charcoal focus-visible:ring-offset-2 focus-visible:ring-offset-cream focus-visible:outline-none disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-brand px-5 py-3 font-medium text-white shadow-sm shadow-brand/25 transition hover:bg-brand-deep focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-canvas focus-visible:outline-none disabled:opacity-60"
         >
           {busy && <Spinner className="size-4" />}
           {isSignup ? "Create account" : "Log in"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-stone">
+      <p className="mt-6 text-center text-sm text-subtle">
         {isSignup ? "Already have an account?" : "New to Study Mate?"}{" "}
-        <Link href={otherHref} className="font-semibold text-terracotta-deep underline-offset-4 hover:underline">
+        <Link href={otherHref} className="font-semibold text-brand-deep underline-offset-4 hover:underline">
           {isSignup ? "Log in" : "Create an account"}
         </Link>
       </p>

@@ -59,13 +59,13 @@ export default function QuizTab({ guide, onSubmitted, onReview }: { guide: Guide
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold tracking-[0.16em] text-terracotta-deep uppercase">Final quiz</p>
-          <h2 className="mt-1 font-serif text-3xl font-semibold">How well do you know it?</h2>
-          <p className="mt-1 text-stone">{guide.quiz.length} questions. You&apos;ll get a score, a rating and an explanation for each answer.</p>
+          <p className="text-xs font-semibold tracking-[0.16em] text-brand-deep uppercase">Final quiz</p>
+          <h2 className="mt-1 font-display text-3xl font-semibold">How well do you know it?</h2>
+          <p className="mt-1 text-subtle">{guide.quiz.length} questions. You&apos;ll get a score, a rating and an explanation for each answer.</p>
         </div>
         {guide.quizAttempts.length > 0 && (
-          <p className="text-sm text-stone">
-            Last attempt: <span className="font-semibold text-charcoal">{guide.quizAttempts.at(-1)!.score}%</span> ·{" "}
+          <p className="text-sm text-subtle">
+            Last attempt: <span className="font-semibold text-ink">{guide.quizAttempts.at(-1)!.score}%</span> ·{" "}
             {timeAgo(guide.quizAttempts.at(-1)!.createdAt)}
           </p>
         )}
@@ -73,11 +73,11 @@ export default function QuizTab({ guide, onSubmitted, onReview }: { guide: Guide
 
       <ol className="mt-8 space-y-6">
         {guide.quiz.map((q, qi) => (
-          <li key={q.position} className="rounded-3xl border border-sand bg-cream p-6">
+          <li key={q.position} className="rounded-2xl border border-line bg-canvas p-6">
             <fieldset>
               <legend className="flex gap-3">
-                <span className="font-serif text-xl font-semibold text-terracotta">{qi + 1}.</span>
-                <span className="font-serif text-xl leading-snug">{q.question}</span>
+                <span className="font-display text-xl font-semibold text-brand">{qi + 1}.</span>
+                <span className="font-display text-xl leading-snug">{q.question}</span>
               </legend>
               <div className="mt-4 grid gap-2">
                 {q.options.map((option, oi) => {
@@ -85,8 +85,8 @@ export default function QuizTab({ guide, onSubmitted, onReview }: { guide: Guide
                   return (
                     <label
                       key={oi}
-                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-terracotta ${
-                        selected ? "border-terracotta bg-terracotta-soft/50" : "border-sand hover:border-terracotta/40"
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand ${
+                        selected ? "border-brand bg-brand-soft/50" : "border-line hover:border-brand/40"
                       }`}
                     >
                       <input
@@ -98,7 +98,7 @@ export default function QuizTab({ guide, onSubmitted, onReview }: { guide: Guide
                       />
                       <span
                         className={`grid size-7 shrink-0 place-items-center rounded-full text-sm font-semibold ${
-                          selected ? "bg-terracotta text-white" : "bg-cream-deep text-stone"
+                          selected ? "bg-brand text-white" : "bg-muted text-subtle"
                         }`}
                       >
                         {LETTERS[oi]}
@@ -118,8 +118,8 @@ export default function QuizTab({ guide, onSubmitted, onReview }: { guide: Guide
           <ErrorNote>{error}</ErrorNote>
         </div>
       )}
-      <div className="sticky bottom-4 mt-6 flex items-center justify-between gap-4 rounded-3xl border border-sand bg-white/95 p-3 pl-6 shadow-lg backdrop-blur">
-        <span className="text-sm text-stone">
+      <div className="sticky bottom-4 mt-6 flex items-center justify-between gap-4 rounded-2xl border border-line bg-white/95 p-3 pl-6 shadow-lg backdrop-blur">
+        <span className="text-sm text-subtle">
           {answered} of {guide.quiz.length} answered
         </span>
         <Button onClick={submit} disabled={submitting} className="px-6 py-3">
@@ -135,10 +135,10 @@ function QuizResults({ result, onRetake, onReview }: { result: QuizResult; onRet
   const good = result.score >= 75;
   return (
     <div className="mx-auto max-w-3xl">
-      <div className={`rounded-[2rem] p-8 text-center sm:p-10 ${good ? "bg-sage text-white" : "bg-charcoal text-cream"}`}>
+      <div className={`rounded-2xl p-8 text-center sm:p-10 ${good ? "bg-success text-white" : "bg-ink text-canvas"}`}>
         <p className="text-xs font-semibold tracking-[0.18em] uppercase opacity-80">Your rating</p>
-        <p className="mt-2 font-serif text-5xl font-semibold">{result.rating}</p>
-        <p className="mt-4 font-serif text-7xl leading-none font-semibold">
+        <p className="mt-2 font-display text-5xl font-semibold">{result.rating}</p>
+        <p className="mt-4 font-display text-7xl leading-none font-semibold">
           {result.score}
           <span className="text-3xl opacity-70">%</span>
         </p>
@@ -148,7 +148,7 @@ function QuizResults({ result, onRetake, onReview }: { result: QuizResult; onRet
         </p>
         <p className="mx-auto mt-5 max-w-lg leading-relaxed opacity-90">{RATING_MESSAGE[result.rating]}</p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
-          <button type="button" onClick={onRetake} className="rounded-full bg-cream px-5 py-2.5 text-sm font-medium text-charcoal hover:bg-white">
+          <button type="button" onClick={onRetake} className="rounded-full bg-canvas px-5 py-2.5 text-sm font-medium text-ink hover:bg-white">
             Retake the quiz
           </button>
           <button type="button" onClick={onReview} className="rounded-full border border-current px-5 py-2.5 text-sm font-medium hover:bg-white/10">
@@ -157,22 +157,22 @@ function QuizResults({ result, onRetake, onReview }: { result: QuizResult; onRet
         </div>
       </div>
 
-      <h3 className="mt-10 font-serif text-2xl font-semibold">Question by question</h3>
+      <h3 className="mt-10 font-display text-2xl font-semibold">Question by question</h3>
       <ol className="mt-4 space-y-4">
         {result.results.map((r, i) => (
-          <li key={r.position} className={`rounded-3xl border p-5 ${r.correct ? "border-sage/40 bg-sage-soft/40" : "border-terracotta/30 bg-terracotta-soft/30"}`}>
+          <li key={r.position} className={`rounded-2xl border p-5 ${r.correct ? "border-success/40 bg-success-soft/40" : "border-brand/30 bg-brand-soft/30"}`}>
             <div className="flex items-start justify-between gap-3">
-              <p className="font-serif text-lg leading-snug">
+              <p className="font-display text-lg leading-snug">
                 <span className="font-semibold">{i + 1}.</span> {r.question}
               </p>
-              <Pill tone={r.correct ? "sage" : "warning"}>{r.correct ? "Correct" : "Incorrect"}</Pill>
+              <Pill tone={r.correct ? "success" : "warning"}>{r.correct ? "Correct" : "Incorrect"}</Pill>
             </div>
             <ul className="mt-3 space-y-1 text-sm">
               {r.options.map((o, oi) => (
                 <li
                   key={oi}
                   className={`rounded-xl px-3 py-1.5 ${
-                    oi === r.correctIndex ? "bg-sage text-white" : oi === r.chosenIndex ? "bg-terracotta-soft text-terracotta-deep line-through" : "text-stone"
+                    oi === r.correctIndex ? "bg-success text-white" : oi === r.chosenIndex ? "bg-brand-soft text-brand-deep line-through" : "text-subtle"
                   }`}
                 >
                   <span className="font-semibold">{LETTERS[oi]}.</span> {o}

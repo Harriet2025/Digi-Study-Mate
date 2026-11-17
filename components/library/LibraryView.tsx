@@ -65,12 +65,12 @@ export default function LibraryView() {
       {error && <ErrorNote onRetry={load}>{error}</ErrorNote>}
 
       {/* Quick stats */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Documents" value={data.documents.length} />
         <StatCard label="Study spaces" value={data.documents.reduce((n, d) => n + d.guides.filter((g) => g.status === "ready").length, 0)} />
-        <Link href="/flashcards" className="group rounded-3xl bg-terracotta p-5 text-white transition hover:bg-terracotta-deep">
+        <Link href="/flashcards" className="group rounded-2xl bg-brand p-5 text-white transition hover:bg-brand-deep">
           <p className="text-sm text-white/80">Flashcards due</p>
-          <p className="mt-1 flex items-baseline justify-between font-serif text-4xl font-semibold">
+          <p className="mt-1 flex items-baseline justify-between font-display text-4xl font-semibold">
             {data.flashcards.due}
             <span className="font-sans text-sm font-medium text-white/90 group-hover:underline">Review →</span>
           </p>
@@ -79,22 +79,22 @@ export default function LibraryView() {
 
       {data.continueListening.length > 0 && (
         <section>
-          <h2 className="font-serif text-2xl font-semibold">Continue listening</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <h2 className="font-display text-2xl font-semibold">Continue listening</h2>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.continueListening.map((e) => (
               <Link
                 key={e.scriptId}
                 href={`/listen/${e.scriptId}`}
-                className="group rounded-3xl border border-sand bg-cream p-5 transition hover:-translate-y-0.5 hover:shadow-lg"
+                className="group rounded-2xl border border-line bg-canvas p-5 transition hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <p className="font-serif text-lg leading-snug font-semibold">{e.title}</p>
-                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-charcoal text-cream transition group-hover:bg-terracotta">
+                  <p className="font-display text-lg leading-snug font-semibold">{e.title}</p>
+                  <span className="">
                     {Icons.play}
                   </span>
                 </div>
                 <ProgressBar value={(e.listening.positionSec / Math.max(1, e.totalDurationSec)) * 100} className="mt-4" />
-                <p className="mt-2 text-xs text-stone">
+                <p className="mt-2 text-xs text-subtle">
                   {formatDuration(e.totalDurationSec - e.listening.positionSec)} left · {timeAgo(e.listening.updatedAt)}
                 </p>
               </Link>
@@ -104,7 +104,7 @@ export default function LibraryView() {
       )}
 
       <section>
-        <h2 className="font-serif text-2xl font-semibold">Your documents</h2>
+        <h2 className="font-display text-2xl font-semibold">Your documents</h2>
         <div className="mt-4 space-y-5">
           {data.documents.map((doc) => (
             <DocumentCard key={doc.documentId} doc={doc} onChanged={load} />
@@ -117,9 +117,9 @@ export default function LibraryView() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-3xl border border-sand bg-cream p-5">
-      <p className="text-sm text-stone">{label}</p>
-      <p className="mt-1 font-serif text-4xl font-semibold">{value}</p>
+    <div className="rounded-2xl border border-line bg-canvas p-5">
+      <p className="text-sm text-subtle">{label}</p>
+      <p className="mt-1 font-display text-4xl font-semibold">{value}</p>
     </div>
   );
 }
@@ -142,14 +142,14 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
 
   return (
     <Card className="p-0">
-      <div className="flex flex-col gap-4 border-b border-sand p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+      <div className="flex flex-col gap-4 border-b border-line p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="flex min-w-0 items-center gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-terracotta-soft text-xs font-bold text-terracotta-deep uppercase">
+          <span className="">
             {doc.sourceType}
           </span>
           <div className="min-w-0">
-            <h3 className="truncate font-serif text-xl font-semibold">{doc.filename.replace(/\.(pdf|pptx)$/i, "")}</h3>
-            <p className="text-sm text-stone">
+            <h3 className="truncate font-display text-xl font-semibold">{doc.filename.replace(/\.(pdf|pptx)$/i, "")}</h3>
+            <p className="text-sm text-subtle">
               {doc.pageCount} {doc.sourceType === "pptx" ? "slides" : "pages"} · added {timeAgo(doc.createdAt)}
             </p>
           </div>
@@ -174,9 +174,9 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
       )}
 
       {doc.guides.length > 0 && (
-        <div className="border-b border-sand p-5 sm:p-6">
-          <p className="text-xs font-semibold tracking-[0.14em] text-stone uppercase">Study spaces</p>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="border-b border-line p-5 sm:p-6">
+          <p className="text-xs font-semibold tracking-[0.14em] text-subtle uppercase">Study spaces</p>
+          <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {doc.guides.map((g) => (
               <GuideCard key={g.guideId} guide={g} onChanged={onChanged} />
             ))}
@@ -184,11 +184,11 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
         </div>
       )}
 
-      <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 p-5 sm:p-6 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-stone uppercase">Audio lessons</p>
+          <p className="text-xs font-semibold tracking-[0.14em] text-subtle uppercase">Audio lessons</p>
           {doc.episodes.length === 0 ? (
-            <p className="mt-3 text-sm text-stone">No audio lessons yet. Add one from a study space&apos;s Listen tab.</p>
+            <p className="mt-3 text-sm text-subtle">No audio lessons yet. Add one from a study space&apos;s Listen tab.</p>
           ) : (
             <ul className="mt-3 space-y-2">
               {doc.episodes.map((e) => (
@@ -198,9 +198,9 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
           )}
         </div>
         <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-stone uppercase">Defense practice</p>
+          <p className="text-xs font-semibold tracking-[0.14em] text-subtle uppercase">Defense practice</p>
           {doc.questionSets.length === 0 ? (
-            <p className="mt-3 text-sm text-stone">No practice sets yet.</p>
+            <p className="mt-3 text-sm text-subtle">No practice sets yet.</p>
           ) : (
             <ul className="mt-3 space-y-2">
               {doc.questionSets.map((qs) => (
@@ -226,33 +226,33 @@ function GuideCard({ guide: g, onChanged }: { guide: GuideSummary; onChanged: ()
     }
   };
   return (
-    <li className="group relative rounded-2xl border border-sand bg-cream p-4 transition hover:border-terracotta/40 hover:shadow-md">
+    <li className="group relative rounded-2xl border border-line bg-canvas p-4 transition hover:border-brand/40 hover:shadow-md">
       <Link href={`/study/${g.guideId}`} className="block">
         <div className="flex items-start gap-3">
           <span
             className={`grid size-11 shrink-0 place-items-center rounded-2xl text-lg ${
-              g.status === "failed" ? "bg-terracotta-soft text-terracotta-deep" : building ? "bg-cream-deep text-terracotta" : "bg-terracotta text-white"
+              g.status === "failed" ? "bg-brand-soft text-brand-deep" : building ? "bg-muted text-brand" : "bg-brand text-white"
             }`}
             aria-hidden="true"
           >
             {building ? <Spinner className="size-5" /> : g.status === "failed" ? "!" : "📖"}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="line-clamp-2 font-serif text-lg leading-snug font-semibold">{g.title}</span>
-            <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-stone">
+            <span className="line-clamp-2 font-display text-lg leading-snug font-semibold">{g.title}</span>
+            <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-subtle">
               {building ? (
-                <span className="text-terracotta-deep">
+                <span className="text-brand-deep">
                   {g.stageLabel}… {g.progress}%
                 </span>
               ) : g.status === "failed" ? (
-                <span className="text-terracotta-deep">Couldn&apos;t be made</span>
+                <span className="text-brand-deep">Couldn&apos;t be made</span>
               ) : (
                 <>
                   <span>{g.sectionCount} steps</span>
                   <span aria-hidden="true">·</span>
                   <span>{g.flashcardCount} cards</span>
                   {g.pageStart && <span>· pp. {g.pageStart}–{g.pageEnd}</span>}
-                  {g.bestQuizScore !== null && <Pill tone={g.bestQuizScore >= 75 ? "sage" : "terracotta"}>Quiz {g.bestQuizScore}%</Pill>}
+                  {g.bestQuizScore !== null && <Pill tone={g.bestQuizScore >= 75 ? "success" : "brand"}>Quiz {g.bestQuizScore}%</Pill>}
                 </>
               )}
             </span>
@@ -264,7 +264,7 @@ function GuideCard({ guide: g, onChanged }: { guide: GuideSummary; onChanged: ()
           type="button"
           onClick={remove}
           aria-label={`Delete study space ${g.title}`}
-          className="absolute top-3 right-3 rounded-full p-1.5 text-stone opacity-0 transition group-hover:opacity-100 hover:bg-terracotta-soft hover:text-terracotta-deep focus-visible:opacity-100"
+          className="absolute top-3 right-3 rounded-full p-1.5 text-subtle opacity-0 transition group-hover:opacity-100 hover:bg-brand-soft hover:text-brand-deep focus-visible:opacity-100"
         >
           <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <path d="M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
@@ -291,24 +291,24 @@ function EpisodeRow({ episode: e, onChanged }: { episode: EpisodeSummary; onChan
   };
 
   return (
-    <li className="group flex items-center gap-3 rounded-2xl border border-sand/70 bg-cream px-4 py-3 transition hover:border-terracotta/40">
+    <li className="group flex items-center gap-3 rounded-2xl border border-line/70 bg-canvas px-4 py-3 transition hover:border-brand/40">
       <Link href={`/listen/${e.scriptId}`} className="flex min-w-0 flex-1 items-center gap-3">
         <span
           className={`grid size-10 shrink-0 place-items-center rounded-full ${
-            e.status === "failed" ? "bg-terracotta-soft text-terracotta-deep" : building ? "bg-cream-deep text-terracotta" : "bg-charcoal text-cream"
+            e.status === "failed" ? "bg-brand-soft text-brand-deep" : building ? "bg-muted text-brand" : "bg-ink text-canvas"
           }`}
         >
           {building ? <Spinner className="size-4" /> : e.status === "failed" ? "!" : Icons.play}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate font-medium">{e.title}</span>
-          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-stone">
+          <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-subtle">
             {building ? (
-              <span className="text-terracotta-deep">
+              <span className="text-brand-deep">
                 {e.stageLabel}… {e.progress}%
               </span>
             ) : e.status === "failed" ? (
-              <span className="text-terracotta-deep">Couldn&apos;t be made</span>
+              <span className="text-brand-deep">Couldn&apos;t be made</span>
             ) : (
               <>
                 <span>{formatDuration(e.totalDurationSec)}</span>
@@ -316,7 +316,7 @@ function EpisodeRow({ episode: e, onChanged }: { episode: EpisodeSummary; onChan
                 <span>{styleLabel(e.style)}</span>
                 {language && <Pill>{language}</Pill>}
                 {e.flashcardCount > 0 && <span>· {e.flashcardCount} cards</span>}
-                {e.listening.completed && <Pill tone="sage">Done</Pill>}
+                {e.listening.completed && <Pill tone="success">Done</Pill>}
               </>
             )}
           </span>
@@ -328,7 +328,7 @@ function EpisodeRow({ episode: e, onChanged }: { episode: EpisodeSummary; onChan
           type="button"
           onClick={remove}
           aria-label={`Delete lesson ${e.title}`}
-          className="rounded-full p-2 text-stone opacity-60 transition hover:bg-terracotta-soft hover:text-terracotta-deep group-hover:opacity-100 focus-visible:opacity-100"
+          className="rounded-full p-2 text-subtle opacity-60 transition hover:bg-brand-soft hover:text-brand-deep group-hover:opacity-100 focus-visible:opacity-100"
         >
           <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
             <path d="M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
@@ -344,16 +344,16 @@ function SetRow({ set }: { set: QuestionSetSummary }) {
     <li>
       <Link
         href={`/practice/${set.setId}`}
-        className="flex items-center justify-between gap-3 rounded-2xl border border-sand/70 bg-cream px-4 py-3 transition hover:border-terracotta/40"
+        className="flex items-center justify-between gap-3 rounded-2xl border border-line/70 bg-canvas px-4 py-3 transition hover:border-brand/40"
       >
         <span className="min-w-0">
           <span className="block truncate font-medium">{set.title ?? "Practice set"}</span>
-          <span className="text-xs text-stone">
+          <span className="text-xs text-subtle">
             {set.answeredCount}/{set.questionCount} answered · {timeAgo(set.createdAt)}
           </span>
         </span>
         {set.averageBest !== null ? (
-          <Pill tone={set.averageBest >= 65 ? "sage" : "terracotta"}>{set.averageBest}/100</Pill>
+          <Pill tone={set.averageBest >= 65 ? "success" : "brand"}>{set.averageBest}/100</Pill>
         ) : (
           <Pill>Start</Pill>
         )}

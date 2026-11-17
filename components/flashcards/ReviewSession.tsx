@@ -6,10 +6,10 @@ import { api, ApiError, formatInterval, timeAgo, type DeckStats, type Flashcard,
 import { Button, EmptyState, ErrorNote, Icons, LinkButton, LoadingBlock, PageHeader, Pill, ProgressBar } from "@/components/ui";
 
 const RATING_BUTTONS: { rating: Rating; label: string; key: string; style: string }[] = [
-  { rating: "again", label: "Again", key: "1", style: "border-terracotta/40 hover:bg-terracotta-soft" },
-  { rating: "hard", label: "Hard", key: "2", style: "border-sand hover:bg-cream-deep" },
-  { rating: "good", label: "Good", key: "3", style: "border-sage/50 hover:bg-sage-soft" },
-  { rating: "easy", label: "Easy", key: "4", style: "border-sage hover:bg-sage-soft" },
+  { rating: "again", label: "Again", key: "1", style: "border-brand/40 hover:bg-brand-soft" },
+  { rating: "hard", label: "Hard", key: "2", style: "border-line hover:bg-muted" },
+  { rating: "good", label: "Good", key: "3", style: "border-success/50 hover:bg-success-soft" },
+  { rating: "easy", label: "Easy", key: "4", style: "border-success hover:bg-success-soft" },
 ];
 
 export default function ReviewSession({
@@ -97,7 +97,7 @@ export default function ReviewSession({
   const header = embedded ? null : (
     <div className="mb-8">
       {episodeId && (
-        <Link href={`/listen/${episodeId}`} className="mb-4 inline-block text-sm font-medium text-stone hover:text-charcoal">
+        <Link href={`/listen/${episodeId}`} className="mb-4 inline-block text-sm font-medium text-subtle hover:text-ink">
           ← Back to the lesson
         </Link>
       )}
@@ -160,14 +160,14 @@ export default function ReviewSession({
     return (
       <>
         {header}
-        <div className="rounded-[2rem] bg-charcoal px-6 py-12 text-center text-cream">
-          <p className="text-xs font-semibold tracking-[0.18em] text-terracotta-soft uppercase">Session complete</p>
-          <p className="mt-2 font-serif text-4xl font-semibold">{reviewed} cards reviewed</p>
-          <div className="mx-auto mt-8 grid max-w-md grid-cols-4 gap-2">
+        <div className="rounded-2xl bg-ink px-6 py-12 text-center text-canvas">
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand-soft uppercase">Session complete</p>
+          <p className="mt-2 font-display text-4xl font-semibold">{reviewed} cards reviewed</p>
+          <div className=" ">
             {RATING_BUTTONS.map((b) => (
-              <div key={b.rating} className="rounded-2xl bg-cream/10 px-2 py-3">
-                <p className="font-serif text-2xl font-semibold">{tally[b.rating]}</p>
-                <p className="text-xs text-cream/70">{b.label}</p>
+              <div key={b.rating} className="rounded-2xl bg-canvas/10 px-2 py-3">
+                <p className="font-display text-2xl font-semibold">{tally[b.rating]}</p>
+                <p className="text-xs text-canvas/70">{b.label}</p>
               </div>
             ))}
           </div>
@@ -188,7 +188,7 @@ export default function ReviewSession({
   return (
     <>
       {header}
-      <div className="mb-4 flex items-center justify-between gap-4 text-sm text-stone">
+      <div className="mb-4 flex items-center justify-between gap-4 text-sm text-subtle">
         <span>
           Card {index + 1} of {cards.length}
         </span>
@@ -224,22 +224,22 @@ export default function ReviewSession({
       <div className="mt-6">
         {!flipped ? (
           <Button onClick={() => setFlipped(true)} variant="dark" className="w-full py-3.5 text-base">
-            Show answer <kbd className="ml-2 rounded bg-cream/15 px-1.5 text-xs">Space</kbd>
+            Show answer <kbd className="ml-2 rounded bg-canvas/15 px-1.5 text-xs">Space</kbd>
           </Button>
         ) : (
           <div>
-            <p className="mb-3 text-center text-sm text-stone">How well did you know it?</p>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <p className="mb-3 text-center text-sm text-subtle">How well did you know it?</p>
+            <div className=" ">
               {RATING_BUTTONS.map((b) => (
                 <button
                   key={b.rating}
                   type="button"
                   disabled={busy}
                   onClick={() => rate(b.rating)}
-                  className={`rounded-2xl border bg-cream px-3 py-3 text-center transition focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:outline-none disabled:opacity-50 ${b.style}`}
+                  className={`rounded-2xl border bg-canvas px-3 py-3 text-center transition focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none disabled:opacity-50 ${b.style}`}
                 >
                   <span className="block font-semibold">{b.label}</span>
-                  <span className="block text-xs text-stone">
+                  <span className="block text-xs text-subtle">
                     {formatInterval(card.nextIntervals[b.rating])} · <kbd>{b.key}</kbd>
                   </span>
                 </button>
@@ -255,20 +255,20 @@ export default function ReviewSession({
 function CardFace({ label, card, back = false, children }: { label: string; card: Flashcard; back?: boolean; children: React.ReactNode }) {
   return (
     <div
-      className={`absolute inset-0 flex flex-col rounded-[2rem] border p-7 shadow-[0_20px_60px_-30px_rgba(41,37,36,0.5)] [backface-visibility:hidden] sm:p-10 ${
-        back ? "border-charcoal bg-charcoal text-cream [transform:rotateY(180deg)]" : "border-sand bg-cream"
+      className={`absolute inset-0 flex flex-col rounded-2xl border p-7 shadow-[0_20px_60px_-30px_rgba(41,37,36,0.5)] [backface-visibility:hidden] sm:p-10 ${
+        back ? "border-ink bg-ink text-canvas [transform:rotateY(180deg)]" : "border-line bg-canvas"
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className={`text-xs font-semibold tracking-[0.16em] uppercase ${back ? "text-terracotta-soft" : "text-terracotta-deep"}`}>
+        <span className={`text-xs font-semibold tracking-[0.16em] uppercase ${back ? "text-brand-soft" : "text-brand-deep"}`}>
           {label}
         </span>
-        {card.source === "checkpoint" && !back && <Pill tone="terracotta">From a checkpoint</Pill>}
+        {card.source === "checkpoint" && !back && <Pill tone="brand">From a checkpoint</Pill>}
         {card.lapses > 0 && back && <Pill tone="warning">Missed {card.lapses}×</Pill>}
       </div>
-      <p className="my-auto py-6 font-serif text-2xl leading-snug text-balance sm:text-3xl">{children}</p>
-      {!back && card.lessonTitle && <p className="truncate text-xs text-stone">{card.lessonTitle}</p>}
-      {!back && <p className="mt-1 text-xs text-stone">Tap the card to flip it</p>}
+      <p className="my-auto py-6 font-display text-2xl leading-snug text-balance sm:text-3xl">{children}</p>
+      {!back && card.lessonTitle && <p className="truncate text-xs text-subtle">{card.lessonTitle}</p>}
+      {!back && <p className="mt-1 text-xs text-subtle">Tap the card to flip it</p>}
     </div>
   );
 }

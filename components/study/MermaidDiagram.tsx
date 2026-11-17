@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from "react";
 
 let initialized: Promise<typeof import("mermaid").default> | null = null;
 
-/** Loads Mermaid once, themed in the Study Mate palette. */
+/** Loads Mermaid once, themed in the Study Mate palette (neutral greys, navy accent). */
 function loadMermaid() {
   initialized ??= import("mermaid").then(({ default: mermaid }) => {
     mermaid.initialize({
@@ -13,19 +13,19 @@ function loadMermaid() {
       theme: "base",
       fontFamily: "var(--font-inter), ui-sans-serif, system-ui, sans-serif",
       themeVariables: {
-        background: "#faf6ef",
-        primaryColor: "#f3dccf",
-        primaryBorderColor: "#b85c38",
-        primaryTextColor: "#292524",
-        secondaryColor: "#e3eadf",
-        secondaryBorderColor: "#6f8a6a",
-        tertiaryColor: "#f1e8da",
-        lineColor: "#9a4a2c",
-        textColor: "#292524",
-        noteBkgColor: "#f1e8da",
-        noteBorderColor: "#e4d7c3",
-        actorBkg: "#f3dccf",
-        actorBorder: "#b85c38",
+        background: "#ffffff",
+        primaryColor: "#e7edf5",
+        primaryBorderColor: "#1e3a5f",
+        primaryTextColor: "#111827",
+        secondaryColor: "#e3f0e8",
+        secondaryBorderColor: "#2f6b4f",
+        tertiaryColor: "#f0f2f5",
+        lineColor: "#4b5563",
+        textColor: "#111827",
+        noteBkgColor: "#f0f2f5",
+        noteBorderColor: "#e2e5ea",
+        actorBkg: "#e7edf5",
+        actorBorder: "#1e3a5f",
         fontSize: "15px",
       },
       flowchart: { curve: "basis", htmlLabels: true },
@@ -110,7 +110,7 @@ export default function MermaidDiagram({ source, caption }: { source: string; ca
   if (failed) return null;
 
   return (
-    <figure className="my-6 overflow-hidden rounded-3xl border border-sand bg-white/70 p-4 sm:p-6">
+    <figure className="my-6 overflow-hidden rounded-2xl border border-line bg-white/70 p-4 sm:p-6">
       {svg ? (
         <div
           className="mx-auto flex justify-center overflow-x-auto [&_svg]:h-auto [&_svg]:max-w-full"
@@ -119,9 +119,9 @@ export default function MermaidDiagram({ source, caption }: { source: string; ca
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       ) : (
-        <div className="h-40 animate-pulse rounded-2xl bg-cream-deep motion-reduce:animate-none" aria-hidden="true" />
+        <div className="h-40 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none" aria-hidden="true" />
       )}
-      {caption && <figcaption className="mt-3 text-center text-sm text-stone">{caption}</figcaption>}
+      {caption && <figcaption className="mt-3 text-center text-sm text-subtle">{caption}</figcaption>}
     </figure>
   );
 }

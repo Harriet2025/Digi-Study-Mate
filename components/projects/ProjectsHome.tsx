@@ -31,10 +31,10 @@ export default function ProjectsHome() {
   }, []);
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr]">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.15fr_1fr]">
       <NewProjectForm />
       <section>
-        <h2 className="font-serif text-2xl font-semibold">Your projects</h2>
+        <h2 className="font-display text-2xl font-semibold">Your projects</h2>
         {error && (
           <div className="mt-4">
             <ErrorNote>{error}</ErrorNote>
@@ -42,7 +42,7 @@ export default function ProjectsHome() {
         )}
         {!projects && !error && <LoadingBlock />}
         {projects && projects.length === 0 && (
-          <p className="mt-3 text-stone">No projects yet. Your presentations will appear here, ready to download and practise.</p>
+          <p className="mt-3 text-subtle">No projects yet. Your presentations will appear here, ready to download and practise.</p>
         )}
         {projects && projects.length > 0 && (
           <ul className="mt-4 space-y-3">
@@ -50,14 +50,14 @@ export default function ProjectsHome() {
               <li key={p.projectId}>
                 <Link
                   href={`/projects/${p.projectId}`}
-                  className="flex items-center gap-4 rounded-3xl border border-sand bg-cream p-5 transition hover:-translate-y-0.5 hover:shadow-lg"
+                  className="flex items-center gap-4 rounded-2xl border border-line bg-canvas p-5 transition hover:-translate-y-0.5 hover:shadow-lg"
                 >
-                  <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-charcoal text-xs font-bold tracking-wide text-cream">
+                  <span className="">
                     PPTX
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-serif text-lg font-semibold">{p.title}</span>
-                    <span className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-stone">
+                    <span className="block truncate font-display text-lg font-semibold">{p.title}</span>
+                    <span className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-subtle">
                       {p.course && <span className="truncate">{p.course}</span>}
                       {p.status === "ready" ? (
                         <span>
@@ -66,11 +66,11 @@ export default function ProjectsHome() {
                       ) : p.status === "failed" ? (
                         <Pill tone="warning">Failed</Pill>
                       ) : (
-                        <Pill tone="terracotta">{p.stageLabel}…</Pill>
+                        <Pill tone="brand">{p.stageLabel}…</Pill>
                       )}
                     </span>
                   </span>
-                  <span aria-hidden="true" className="text-terracotta">
+                  <span aria-hidden="true" className="text-brand">
                     →
                   </span>
                 </Link>
@@ -143,8 +143,8 @@ function NewProjectForm() {
     <Card className="h-fit p-7 sm:p-8">
       <form onSubmit={submit} className="space-y-6">
         <div>
-          <p className="text-xs font-semibold tracking-[0.18em] text-terracotta-deep uppercase">New project</p>
-          <h2 className="mt-1 font-serif text-2xl font-semibold">What do you need to present?</h2>
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">New project</p>
+          <h2 className="mt-1 font-display text-2xl font-semibold">What do you need to present?</h2>
         </div>
 
         <div>
@@ -157,14 +157,14 @@ function NewProjectForm() {
               e.preventDefault();
               pickFile(e.dataTransfer.files[0]);
             }}
-            className="flex w-full items-center gap-4 rounded-2xl border-2 border-dashed border-sand bg-cream-deep/40 px-5 py-5 text-left transition hover:border-terracotta/50"
+            className="flex w-full items-center gap-4 rounded-2xl border-2 border-dashed border-line bg-muted/40 px-5 py-5 text-left transition hover:border-brand/50"
           >
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-terracotta text-white" aria-hidden="true">
+            <span className="" aria-hidden="true">
               ⬆
             </span>
             <span className="min-w-0">
               <span className="block truncate font-medium">{file ? file.name : "Drop or choose the brief"}</span>
-              <span className="text-sm text-stone">{file ? "Click to change" : "PDF, Word, PowerPoint or text. Optional if you describe it below."}</span>
+              <span className="text-sm text-subtle">{file ? "Click to change" : "PDF, Word, PowerPoint or text. Optional if you describe it below."}</span>
             </span>
           </button>
           <input
@@ -179,14 +179,14 @@ function NewProjectForm() {
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextField id="title" label="Presentation title" value={title} onChange={setTitle} placeholder="e.g. Smart library system" />
           <TextField id="course" label="Course (optional)" value={course} onChange={setCourse} placeholder="e.g. BCP 202 Database Design" />
         </div>
 
         <div>
           <label htmlFor="instructions" className="mb-2 block text-sm font-semibold">
-            Anything else we should know? <span className="font-normal text-stone">(optional with a brief)</span>
+            Anything else we should know? <span className="font-normal text-subtle">(optional with a brief)</span>
           </label>
           <textarea
             id="instructions"
@@ -195,7 +195,7 @@ function NewProjectForm() {
             rows={4}
             maxLength={12000}
             placeholder="Your topic and angle, what you've built or found, the marking criteria, your group members' parts…"
-            className="w-full resize-y rounded-2xl border border-sand bg-white px-4 py-3 focus:border-terracotta focus:ring-2 focus:ring-terracotta/30 focus:outline-none"
+            className="w-full resize-y rounded-2xl border border-line bg-white px-4 py-3 focus:border-brand focus:ring-2 focus:ring-brand/30 focus:outline-none"
           />
         </div>
 
@@ -208,7 +208,7 @@ function NewProjectForm() {
           {submitting ? <Spinner className="size-4" /> : <span aria-hidden="true">✨</span>}
           {submitting ? "Starting…" : "Create my presentation and defense pack"}
         </Button>
-        <p className="text-center text-xs text-stone">
+        <p className="text-center text-xs text-subtle">
           You&apos;ll get a designed .pptx with speaker notes, a presenter script, likely questions with model answers, and practice with an examiner.
         </p>
       </form>
@@ -228,7 +228,7 @@ function TextField({ id, label, value, onChange, placeholder }: { id: string; la
         onChange={(e) => onChange(e.target.value)}
         maxLength={300}
         placeholder={placeholder}
-        className="w-full rounded-2xl border border-sand bg-white px-4 py-3 focus:border-terracotta focus:ring-2 focus:ring-terracotta/30 focus:outline-none"
+        className="w-full rounded-2xl border border-line bg-white px-4 py-3 focus:border-brand focus:ring-2 focus:ring-brand/30 focus:outline-none"
       />
     </div>
   );

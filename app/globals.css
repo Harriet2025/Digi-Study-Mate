@@ -1,19 +1,20 @@
 @import "tailwindcss";
 
-/* Warm editorial palette */
+/* Neutral, professional palette: cool greys with one deep navy accent. */
 @theme {
-  --color-cream: #faf6ef;
-  --color-cream-deep: #f1e8da;
-  --color-sand: #e4d7c3;
-  --color-terracotta: #b85c38;
-  --color-terracotta-deep: #9a4a2c;
-  --color-terracotta-soft: #f3dccf;
-  --color-charcoal: #292524;
-  --color-stone: #6b625b;
-  --color-sage: #6f8a6a;
-  --color-sage-soft: #e3eadf;
+  --color-page: #f7f8fa; /* page background */
+  --color-canvas: #ffffff; /* cards, inputs, light text on dark */
+  --color-muted: #f0f2f5; /* quiet surfaces */
+  --color-line: #e2e5ea; /* borders, dividers */
+  --color-brand: #1e3a5f; /* navy accent: primary buttons, highlights */
+  --color-brand-deep: #142a46;
+  --color-brand-soft: #e7edf5;
+  --color-ink: #111827; /* text, dark sections */
+  --color-subtle: #4b5563; /* secondary text (7:1 on white) */
+  --color-success: #2f6b4f;
+  --color-success-soft: #e3f0e8;
 
-  --font-serif: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
   /* Audio waveform bars on the homepage */
@@ -42,8 +43,8 @@
 }
 
 html {
-  background-color: var(--color-cream);
-  color: var(--color-charcoal);
+  background-color: var(--color-page);
+  color: var(--color-ink);
   scroll-behavior: smooth;
   scroll-padding-top: 5rem; /* keep anchored sections clear of the sticky header */
 }
@@ -63,7 +64,7 @@ html {
 }
 .study-prose strong {
   font-weight: 650;
-  color: var(--color-charcoal);
+  color: var(--color-ink);
 }
 .study-prose ul,
 .study-prose ol {
@@ -79,12 +80,12 @@ html {
   margin-top: 0.35em;
 }
 .study-prose li::marker {
-  color: var(--color-terracotta);
+  color: var(--color-brand);
 }
 .study-prose h1,
 .study-prose h2,
 .study-prose h3 {
-  font-family: var(--font-serif);
+  font-family: var(--font-display);
   font-weight: 600;
   line-height: 1.25;
 }
@@ -95,21 +96,21 @@ html {
   font-size: 1.15em;
 }
 .study-prose a {
-  color: var(--color-terracotta-deep);
+  color: var(--color-brand-deep);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 .study-prose code {
   border-radius: 0.4em;
-  background: var(--color-cream-deep);
+  background: var(--color-muted);
   padding: 0.1em 0.35em;
   font-size: 0.9em;
 }
 .study-prose pre {
   overflow-x: auto;
   border-radius: 1rem;
-  background: var(--color-charcoal);
-  color: var(--color-cream);
+  background: var(--color-ink);
+  color: var(--color-canvas);
   padding: 1rem;
 }
 .study-prose pre code {
@@ -123,15 +124,15 @@ html {
 }
 .study-prose th,
 .study-prose td {
-  border: 1px solid var(--color-sand);
+  border: 1px solid var(--color-line);
   padding: 0.45em 0.7em;
   text-align: left;
 }
 .study-prose th {
-  background: var(--color-cream-deep);
+  background: var(--color-muted);
 }
 .study-prose blockquote {
-  border-left: 3px solid var(--color-terracotta);
+  border-left: 3px solid var(--color-brand);
   padding-left: 1em;
-  color: var(--color-stone);
+  color: var(--color-subtle);
 }

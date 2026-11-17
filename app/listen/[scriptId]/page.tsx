@@ -40,12 +40,12 @@ export default async function ListenPage({ params }: { params: Promise<{ scriptI
   if (!result.ok) {
     return (
       <Page narrow>
-        <div className="mx-auto max-w-xl rounded-3xl border border-sand bg-cream-deep p-8 text-center">
-          <h1 className="font-serif text-2xl font-semibold">This lesson isn&apos;t available right now</h1>
-          <p className="mt-2 text-stone">
+        <div className="mx-auto max-w-xl rounded-2xl border border-line bg-muted p-8 text-center">
+          <h1 className="font-display text-2xl font-semibold">This lesson isn&apos;t available right now</h1>
+          <p className="mt-2 text-subtle">
             We couldn&apos;t reach the Study Mate server. Check that it&apos;s running and try again in a moment.
           </p>
-          <Link href="/library" className="mt-6 inline-block font-medium text-terracotta-deep underline-offset-4 hover:underline">
+          <Link href="/library" className="mt-6 inline-block font-medium text-brand-deep underline-offset-4 hover:underline">
             Back to library
           </Link>
         </div>
@@ -69,10 +69,10 @@ export default async function ListenPage({ params }: { params: Promise<{ scriptI
     <Page narrow>
       <div className="mb-5 flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/library" className="mr-2 text-sm font-medium text-stone hover:text-charcoal">
+          <Link href="/library" className="mr-2 text-sm font-medium text-subtle hover:text-ink">
             ← Library
           </Link>
-          <Pill tone="terracotta">{styleLabel(episode.style)}</Pill>
+          <Pill tone="brand">{styleLabel(episode.style)}</Pill>
           {level && <Pill>{level}</Pill>}
           {language && episode.language !== "en" && <Pill>{language}</Pill>}
           {episode.pageStart && (

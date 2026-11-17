@@ -45,8 +45,8 @@ export default function ProjectView({ projectId }: { projectId: string }) {
   if (project.status === "failed") {
     return (
       <Card className="mx-auto max-w-xl py-10 text-center">
-        <p className="font-serif text-2xl font-semibold">This presentation couldn&apos;t be made</p>
-        <p className="mt-2 text-stone">{project.error ?? "Something went wrong. Please try again."}</p>
+        <p className="font-display text-2xl font-semibold">This presentation couldn&apos;t be made</p>
+        <p className="mt-2 text-subtle">{project.error ?? "Something went wrong. Please try again."}</p>
         <LinkButton href="/projects" className="mt-6">
           Back to projects
         </LinkButton>
@@ -57,14 +57,14 @@ export default function ProjectView({ projectId }: { projectId: string }) {
 
   return (
     <div>
-      <Link href="/projects" className="text-sm font-medium text-stone hover:text-charcoal">
+      <Link href="/projects" className="text-sm font-medium text-subtle hover:text-ink">
         ← All projects
       </Link>
       <div className="mt-3 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold tracking-[0.18em] text-terracotta-deep uppercase">{project.course ?? "Project"}</p>
-          <h1 className="mt-1 font-serif text-4xl leading-tight font-semibold text-balance sm:text-5xl">{project.title}</h1>
-          <p className="mt-2 text-stone">
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">{project.course ?? "Project"}</p>
+          <h1 className="mt-1 font-display text-4xl leading-tight font-semibold text-balance sm:text-5xl">{project.title}</h1>
+          <p className="mt-2 text-subtle">
             {(project.deck?.slides.length ?? 0) + 2} slides · {project.durationMinutes}-minute talk
             {project.sourceFilename && ` · from ${project.sourceFilename}`}
           </p>
@@ -73,7 +73,7 @@ export default function ProjectView({ projectId }: { projectId: string }) {
           <a
             href={project.downloadUrl}
             download
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-terracotta px-6 py-3 font-medium text-white shadow-md shadow-terracotta/25 transition hover:bg-terracotta-deep"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-brand px-6 py-3 font-medium text-white shadow-md shadow-brand/25 transition hover:bg-brand-deep"
           >
             <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M12 4v12m0 0-4-4m4 4 4-4M5 20h14" />
@@ -83,7 +83,7 @@ export default function ProjectView({ projectId }: { projectId: string }) {
         )}
       </div>
 
-      <div className="sticky top-16 z-30 -mx-4 mt-8 border-b border-sand bg-cream/90 px-4 backdrop-blur-md sm:-mx-6 sm:px-6">
+      <div className="sticky top-16 z-30 -mx-4 mt-8 border-b border-line bg-canvas/90 px-4 backdrop-blur-md sm:-mx-6 sm:px-6">
         <nav aria-label="Project" className="flex gap-1 overflow-x-auto py-2">
           {TABS.map((t) => (
             <button
@@ -95,7 +95,7 @@ export default function ProjectView({ projectId }: { projectId: string }) {
               }}
               aria-current={tab === t.key ? "page" : undefined}
               className={`flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
-                tab === t.key ? "bg-charcoal text-cream" : "text-stone hover:bg-cream-deep hover:text-charcoal"
+                tab === t.key ? "bg-ink text-canvas" : "text-subtle hover:bg-muted hover:text-ink"
               }`}
             >
               <span aria-hidden="true">{t.icon}</span>
@@ -135,16 +135,16 @@ function Building({ project }: { project: ProjectDetail }) {
   return (
     <Card className="mx-auto max-w-xl p-8 sm:p-10">
       <div className="flex items-center gap-4">
-        <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-charcoal text-cream">
+        <div className="">
           <Spinner className="size-7" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-[0.16em] text-terracotta-deep uppercase">Building your presentation</p>
-          <h1 className="truncate font-serif text-2xl font-semibold">{project.title}</h1>
+          <p className="text-xs font-semibold tracking-[0.16em] text-brand-deep uppercase">Building your presentation</p>
+          <h1 className="truncate font-display text-2xl font-semibold">{project.title}</h1>
         </div>
       </div>
       <ProgressBar value={project.progress} className="mt-8" />
-      <p className="mt-2 text-right text-sm text-stone tabular-nums" aria-live="polite">
+      <p className="mt-2 text-right text-sm text-subtle tabular-nums" aria-live="polite">
         {project.progress}%
       </p>
       <ol className="mt-4 space-y-3">
@@ -154,17 +154,17 @@ function Building({ project }: { project: ProjectDetail }) {
             <li key={stage.key} className="flex items-center gap-3">
               <span
                 className={`grid size-7 shrink-0 place-items-center rounded-full text-xs font-bold ${
-                  state === "done" ? "bg-sage text-white" : state === "current" ? "bg-terracotta-soft text-terracotta-deep" : "bg-cream-deep text-stone"
+                  state === "done" ? "bg-success text-white" : state === "current" ? "bg-brand-soft text-brand-deep" : "bg-muted text-subtle"
                 }`}
               >
                 {state === "done" ? "✓" : state === "current" ? <Spinner className="size-3.5" /> : i + 1}
               </span>
-              <span className={state === "todo" ? "text-stone" : "font-medium"}>{stage.label}</span>
+              <span className={state === "todo" ? "text-subtle" : "font-medium"}>{stage.label}</span>
             </li>
           );
         })}
       </ol>
-      <p className="mt-8 rounded-2xl bg-cream-deep px-4 py-3 text-sm text-stone">
+      <p className="mt-8 rounded-2xl bg-muted px-4 py-3 text-sm text-subtle">
         This takes about one to three minutes. You can leave this page; your project will be waiting under Projects.
       </p>
     </Card>
@@ -178,13 +178,13 @@ function SlidesTab({ project }: { project: ProjectDetail }) {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-stone">A preview of your deck. The downloaded PowerPoint has the same design and every speaker note, ready to edit.</p>
+        <p className="text-subtle">A preview of your deck. The downloaded PowerPoint has the same design and every speaker note, ready to edit.</p>
         <label className="flex items-center gap-2 text-sm font-medium">
-          <input type="checkbox" checked={showNotes} onChange={(e) => setShowNotes(e.target.checked)} className="size-4 accent-terracotta" />
+          <input type="checkbox" checked={showNotes} onChange={(e) => setShowNotes(e.target.checked)} className="size-4 accent-brand" />
           Show speaker notes
         </label>
       </div>
-      <ol className="grid gap-8 md:grid-cols-2">
+      <ol className="grid grid-cols-1 gap-8 md:grid-cols-2">
         <SlideItem number={1} notes={showNotes ? deck.titleNotes : null}>
           <TitleSlidePreview title={deck.title} subtitle={deck.subtitle} course={project.course} />
         </SlideItem>
@@ -204,10 +204,10 @@ function SlidesTab({ project }: { project: ProjectDetail }) {
 function SlideItem({ number, notes, children }: { number: number; notes: string | null; children: React.ReactNode }) {
   return (
     <li>
-      <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-stone uppercase">Slide {number}</p>
+      <p className="mb-2 text-xs font-semibold tracking-[0.14em] text-subtle uppercase">Slide {number}</p>
       {children}
       {notes && (
-        <p className="mt-3 rounded-2xl bg-cream-deep/70 px-4 py-3 text-sm leading-relaxed">
+        <p className="mt-3 rounded-2xl bg-muted/70 px-4 py-3 text-sm leading-relaxed">
           <span className="font-semibold">Notes: </span>
           {notes}
         </p>
@@ -221,33 +221,33 @@ function ScriptTab({ project }: { project: ProjectDetail }) {
   const totalSeconds = defense.script.reduce((n, s) => n + (s.seconds || 0), 0);
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="rounded-3xl bg-charcoal p-6 text-cream sm:p-8">
-        <p className="text-xs font-semibold tracking-[0.16em] text-terracotta-soft uppercase">Open with</p>
-        <p className="mt-2 font-serif text-2xl leading-snug">“{defense.openingLine}”</p>
-        <p className="mt-4 text-sm text-cream/70">
+      <div className="rounded-2xl bg-ink p-6 text-canvas sm:p-8">
+        <p className="text-xs font-semibold tracking-[0.16em] text-brand-soft uppercase">Open with</p>
+        <p className="mt-2 font-display text-2xl leading-snug">“{defense.openingLine}”</p>
+        <p className="mt-4 text-sm text-canvas/70">
           Planned length: about {Math.round(totalSeconds / 60)} min for a {project.durationMinutes}-minute slot. Practise out loud with a timer
           at least twice.
         </p>
       </div>
       <ol className="mt-8 space-y-4">
         {defense.script.map((s) => (
-          <li key={s.slideNumber} className="rounded-3xl border border-sand bg-cream p-6">
+          <li key={s.slideNumber} className="rounded-2xl border border-line bg-canvas p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="font-serif text-xl font-semibold">
-                <span className="text-terracotta">Slide {s.slideNumber}.</span> {s.title}
+              <p className="font-display text-xl font-semibold">
+                <span className="text-brand">Slide {s.slideNumber}.</span> {s.title}
               </p>
-              <span className="rounded-full bg-cream-deep px-3 py-1 text-xs font-semibold text-stone">~{s.seconds}s</span>
+              <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-subtle">~{s.seconds}s</span>
             </div>
             <p className="mt-3 text-[17px] leading-relaxed">{s.talkingPoints}</p>
             {s.transition && (
-              <p className="mt-3 border-l-2 border-terracotta pl-3 text-sm text-stone italic">Then: “{s.transition}”</p>
+              <p className="mt-3 border-l-2 border-brand pl-3 text-sm text-subtle italic">Then: “{s.transition}”</p>
             )}
           </li>
         ))}
       </ol>
-      <div className="mt-8 rounded-3xl bg-terracotta p-6 text-white sm:p-8">
+      <div className="mt-8 rounded-2xl bg-brand p-6 text-white sm:p-8">
         <p className="text-xs font-semibold tracking-[0.16em] uppercase opacity-80">Close with</p>
-        <p className="mt-2 font-serif text-2xl leading-snug">“{defense.closingLine}”</p>
+        <p className="mt-2 font-display text-2xl leading-snug">“{defense.closingLine}”</p>
       </div>
     </div>
   );
@@ -256,10 +256,10 @@ function ScriptTab({ project }: { project: ProjectDetail }) {
 function CoachTab({ project, onPractise }: { project: ProjectDetail; onPractise: () => void }) {
   const defense = project.defense!;
   return (
-    <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
       <section>
-        <h2 className="font-serif text-2xl font-semibold">Questions your lecturer is likely to ask</h2>
-        <p className="mt-1 text-stone">Try answering each one out loud before you reveal the model answer.</p>
+        <h2 className="font-display text-2xl font-semibold">Questions your lecturer is likely to ask</h2>
+        <p className="mt-1 text-subtle">Try answering each one out loud before you reveal the model answer.</p>
         <ol className="mt-5 space-y-4">
           {defense.likelyQuestions.map((q, i) => (
             <LikelyQuestion key={i} number={i + 1} q={q} />
@@ -270,12 +270,12 @@ function CoachTab({ project, onPractise }: { project: ProjectDetail; onPractise:
         </Button>
       </section>
       <aside className="space-y-5 lg:sticky lg:top-36 lg:self-start">
-        <Card className="bg-charcoal text-cream">
-          <p className="text-xs font-semibold tracking-[0.16em] text-terracotta-soft uppercase">How to defend it</p>
+        <Card className="bg-ink text-canvas">
+          <p className="text-xs font-semibold tracking-[0.16em] text-brand-soft uppercase">How to defend it</p>
           <ul className="mt-3 space-y-3 text-sm leading-relaxed">
             {defense.strategy.map((s) => (
               <li key={s} className="flex gap-2">
-                <span className="text-terracotta-soft" aria-hidden="true">
+                <span className="text-brand-soft" aria-hidden="true">
                   ✓
                 </span>
                 {s}
@@ -285,11 +285,11 @@ function CoachTab({ project, onPractise }: { project: ProjectDetail; onPractise:
         </Card>
         {defense.weakSpots.length > 0 && (
           <Card>
-            <p className="text-xs font-semibold tracking-[0.16em] text-terracotta-deep uppercase">Be ready to defend</p>
+            <p className="text-xs font-semibold tracking-[0.16em] text-brand-deep uppercase">Be ready to defend</p>
             <ul className="mt-3 space-y-2 text-sm leading-relaxed">
               {defense.weakSpots.map((w) => (
                 <li key={w} className="flex gap-2">
-                  <span className="text-terracotta" aria-hidden="true">
+                  <span className="text-brand" aria-hidden="true">
                     !
                   </span>
                   {w}
@@ -306,25 +306,25 @@ function CoachTab({ project, onPractise }: { project: ProjectDetail; onPractise:
 function LikelyQuestion({ number, q }: { number: number; q: DefensePack["likelyQuestions"][number] }) {
   const [open, setOpen] = useState(false);
   return (
-    <li className="rounded-3xl border border-sand bg-cream p-6">
-      <p className="font-serif text-xl leading-snug">
-        <span className="font-semibold text-terracotta">{number}.</span> “{q.question}”
+    <li className="rounded-2xl border border-line bg-canvas p-6">
+      <p className="font-display text-xl leading-snug">
+        <span className="font-semibold text-brand">{number}.</span> “{q.question}”
       </p>
-      <p className="mt-2 text-sm text-stone">
-        <span className="font-semibold text-charcoal">What they&apos;re testing:</span> {q.why}
+      <p className="mt-2 text-sm text-subtle">
+        <span className="font-semibold text-ink">What they&apos;re testing:</span> {q.why}
       </p>
       {open ? (
-        <div className="mt-4 rounded-2xl bg-sage-soft/60 p-4">
-          <p className="text-xs font-semibold tracking-[0.14em] text-sage uppercase">Model answer</p>
+        <div className="mt-4 rounded-2xl bg-success-soft/60 p-4">
+          <p className="text-xs font-semibold tracking-[0.14em] text-success uppercase">Model answer</p>
           <p className="mt-1 leading-relaxed">{q.modelAnswer}</p>
           {q.tip && (
-            <p className="mt-3 text-sm text-stone">
-              <span className="font-semibold text-charcoal">Delivery tip:</span> {q.tip}
+            <p className="mt-3 text-sm text-subtle">
+              <span className="font-semibold text-ink">Delivery tip:</span> {q.tip}
             </p>
           )}
         </div>
       ) : (
-        <button type="button" onClick={() => setOpen(true)} className="mt-4 rounded-full border border-sand px-4 py-2 text-sm font-medium hover:border-terracotta/50">
+        <button type="button" onClick={() => setOpen(true)} className="mt-4 rounded-full border border-line px-4 py-2 text-sm font-medium hover:border-brand/50">
           I&apos;ve tried. Show the model answer
         </button>
       )}
@@ -350,10 +350,10 @@ function PracticeTab({ project }: { project: ProjectDetail }) {
   };
 
   return (
-    <Card className="mx-auto max-w-2xl bg-charcoal p-8 text-center text-cream sm:p-10">
-      <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-terracotta text-white">{Icons.shield}</span>
-      <h2 className="mt-5 font-serif text-3xl font-semibold">Rehearse with a strict examiner</h2>
-      <p className="mx-auto mt-3 max-w-md text-cream/75">
+    <Card className="mx-auto max-w-2xl bg-ink p-8 text-center text-canvas sm:p-10">
+      <span className=" ">{Icons.shield}</span>
+      <h2 className="mt-5 font-display text-3xl font-semibold">Rehearse with a strict examiner</h2>
+      <p className="mx-auto mt-3 max-w-md text-canvas/75">
         The examiner reads your slides, finds the weak spots and asks you five tough questions. Answer by typing or speaking and get
         graded against a marking rubric, with feedback on what you missed.
       </p>
@@ -366,7 +366,7 @@ function PracticeTab({ project }: { project: ProjectDetail }) {
         {busy ? <Spinner className="size-4" /> : Icons.shield}
         {busy ? "The examiner is reading your slides…" : project.questionSetId ? "Continue practising" : "Start practice session"}
       </Button>
-      {busy && <p className="mt-3 text-xs text-cream/60">This takes about 20–40 seconds the first time.</p>}
+      {busy && <p className="mt-3 text-xs text-canvas/60">This takes about 20–40 seconds the first time.</p>}
     </Card>
   );
 }

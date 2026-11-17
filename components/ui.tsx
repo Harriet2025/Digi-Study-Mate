@@ -17,9 +17,9 @@ export function PageHeader({
   return (
     <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-2xl">
-        {eyebrow && <p className="text-xs font-semibold tracking-[0.18em] text-terracotta-deep uppercase">{eyebrow}</p>}
-        <h1 className="mt-2 font-serif text-4xl leading-tight font-semibold text-balance sm:text-5xl">{title}</h1>
-        {description && <p className="mt-3 text-lg leading-relaxed text-stone">{description}</p>}
+        {eyebrow && <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">{eyebrow}</p>}
+        <h1 className="mt-2 font-display text-4xl leading-tight font-semibold text-balance sm:text-5xl">{title}</h1>
+        {description && <p className="mt-3 text-lg leading-relaxed text-subtle">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap gap-3">{actions}</div>}
     </div>
@@ -33,16 +33,16 @@ export function Page({ children, narrow = false }: { children: ReactNode; narrow
 type Variant = "primary" | "dark" | "secondary" | "ghost" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-terracotta text-white shadow-sm shadow-terracotta/25 hover:bg-terracotta-deep",
-  dark: "bg-charcoal text-cream hover:bg-charcoal/85",
-  secondary: "border border-sand bg-cream text-charcoal hover:border-terracotta/50 hover:bg-cream-deep",
-  ghost: "text-charcoal hover:bg-cream-deep",
-  danger: "text-terracotta-deep hover:bg-terracotta-soft",
+  primary: "bg-brand text-white shadow-sm shadow-brand/25 hover:bg-brand-deep",
+  dark: "bg-ink text-canvas hover:bg-ink/85",
+  secondary: "border border-line bg-canvas text-ink hover:border-brand/50 hover:bg-muted",
+  ghost: "text-ink hover:bg-muted",
+  danger: "text-brand-deep hover:bg-brand-soft",
 };
 
 const BASE =
   "inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition " +
-  "focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2 focus-visible:ring-offset-cream focus-visible:outline-none " +
+  "focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas focus-visible:outline-none " +
   "disabled:cursor-not-allowed disabled:opacity-50";
 
 export function Button({ variant = "primary", className = "", ...props }: ComponentProps<"button"> & { variant?: Variant }) {
@@ -59,24 +59,24 @@ export function LinkButton({
 
 export function Card({ className = "", children }: { className?: string; children: ReactNode }) {
   // A background passed in className replaces the default cream one (otherwise CSS order decides).
-  const background = /(^|\s)bg-/.test(className) ? "" : "bg-cream";
-  return <div className={`rounded-3xl border border-sand p-6 ${background} ${className}`}>{children}</div>;
+  const background = /(^|\s)bg-/.test(className) ? "" : "bg-canvas";
+  return <div className={`rounded-2xl border border-line p-6 ${background} ${className}`}>{children}</div>;
 }
 
 export function Pill({
   tone = "neutral",
   children,
 }: {
-  tone?: "neutral" | "terracotta" | "sage" | "dark" | "warning" | "glass";
+  tone?: "neutral" | "brand" | "success" | "dark" | "warning" | "glass";
   children: ReactNode;
 }) {
   const tones = {
-    neutral: "bg-cream-deep text-stone",
-    terracotta: "bg-terracotta-soft text-terracotta-deep",
-    sage: "bg-sage-soft text-sage",
-    dark: "bg-charcoal text-cream",
-    warning: "bg-terracotta text-white",
-    glass: "bg-cream/15 text-cream",
+    neutral: "bg-muted text-subtle",
+    brand: "bg-brand-soft text-brand-deep",
+    success: "bg-success-soft text-success",
+    dark: "bg-ink text-canvas",
+    warning: "bg-brand text-white",
+    glass: "bg-canvas/15 text-canvas",
   };
   return <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${tones[tone]}`}>{children}</span>;
 }
@@ -94,20 +94,20 @@ export function ProgressBar({ value, className = "" }: { value: number; classNam
   const pct = Math.max(0, Math.min(100, value));
   return (
     <div
-      className={`h-2 overflow-hidden rounded-full bg-sand ${className}`}
+      className={`h-2 overflow-hidden rounded-full bg-line ${className}`}
       role="progressbar"
       aria-valuenow={Math.round(pct)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <div className="h-full rounded-full bg-terracotta transition-[width] duration-500" style={{ width: `${pct}%` }} />
+      <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
 export function ErrorNote({ children, onRetry }: { children: ReactNode; onRetry?: () => void }) {
   return (
-    <div role="alert" className="flex items-start justify-between gap-4 rounded-2xl border border-terracotta/30 bg-terracotta-soft/60 px-4 py-3 text-sm text-terracotta-deep">
+    <div role="alert" className="flex items-start justify-between gap-4 rounded-2xl border border-brand/30 bg-brand-soft/60 px-4 py-3 text-sm text-brand-deep">
       <p>{children}</p>
       {onRetry && (
         <button type="button" onClick={onRetry} className="shrink-0 font-semibold underline-offset-4 hover:underline">
@@ -120,10 +120,10 @@ export function ErrorNote({ children, onRetry }: { children: ReactNode; onRetry?
 
 export function EmptyState({ icon, title, children, action }: { icon?: ReactNode; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="rounded-3xl border border-dashed border-sand bg-cream-deep/40 px-6 py-14 text-center">
-      {icon && <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-terracotta-soft text-terracotta-deep">{icon}</div>}
-      <h2 className="font-serif text-2xl font-semibold">{title}</h2>
-      {children && <p className="mx-auto mt-2 max-w-md text-stone">{children}</p>}
+    <div className="rounded-2xl border border-dashed border-line bg-muted/40 px-6 py-14 text-center">
+      {icon && <div className=" ">{icon}</div>}
+      <h2 className="font-display text-2xl font-semibold">{title}</h2>
+      {children && <p className="mx-auto mt-2 max-w-md text-subtle">{children}</p>}
       {action && <div className="mt-6 flex justify-center">{action}</div>}
     </div>
   );
@@ -131,7 +131,7 @@ export function EmptyState({ icon, title, children, action }: { icon?: ReactNode
 
 export function LoadingBlock({ label = "Loading…" }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center gap-3 py-20 text-stone" role="status">
+    <div className="flex items-center justify-center gap-3 py-20 text-subtle" role="status">
       <Spinner /> {label}
     </div>
   );
@@ -161,13 +161,13 @@ export function ChoiceGroup<T extends string | number>({
           return (
             <label
               key={String(o.value)}
-              className={`cursor-pointer rounded-2xl border px-4 py-3 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-terracotta ${
-                selected ? "border-terracotta bg-terracotta-soft/50" : "border-sand bg-cream hover:border-terracotta/40"
+              className={`cursor-pointer rounded-2xl border px-4 py-3 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand ${
+                selected ? "border-brand bg-brand-soft/50" : "border-line bg-canvas hover:border-brand/40"
               }`}
             >
               <input type="radio" className="sr-only" checked={selected} onChange={() => onChange(o.value)} />
               <span className="block text-sm font-semibold">{o.label}</span>
-              {o.hint && <span className="mt-0.5 block text-xs leading-snug text-stone">{o.hint}</span>}
+              {o.hint && <span className="mt-0.5 block text-xs leading-snug text-subtle">{o.hint}</span>}
             </label>
           );
         })}

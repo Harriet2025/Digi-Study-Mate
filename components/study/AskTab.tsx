@@ -49,10 +49,10 @@ export default function AskTab({ guide }: { guide: GuideDetail }) {
   return (
     <div className="mx-auto flex max-w-3xl flex-col">
       {messages.length === 0 && (
-        <div className="rounded-3xl bg-charcoal p-6 text-cream sm:p-8">
-          <p className="text-xs font-semibold tracking-[0.16em] text-terracotta-soft uppercase">Your tutor</p>
-          <h2 className="mt-2 font-serif text-2xl font-semibold">Ask anything about “{guide.title}”</h2>
-          <p className="mt-2 text-cream/75">
+        <div className="rounded-2xl bg-ink p-6 text-canvas sm:p-8">
+          <p className="text-xs font-semibold tracking-[0.16em] text-brand-soft uppercase">Your tutor</p>
+          <h2 className="mt-2 font-display text-2xl font-semibold">Ask anything about “{guide.title}”</h2>
+          <p className="mt-2 text-canvas/75">
             Answers come from your own pages, with page references, so you can check them. Ask for simpler explanations, examples,
             diagrams, or to be quizzed.
           </p>
@@ -62,18 +62,18 @@ export default function AskTab({ guide }: { guide: GuideDetail }) {
       <div className="mt-6 space-y-5" aria-live="polite">
         {messages.map((m) =>
           m.role === "user" ? (
-            <div key={m.id} className="ml-auto w-fit max-w-[85%] rounded-3xl rounded-br-md bg-charcoal px-5 py-3 text-cream">
+            <div key={m.id} className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-ink px-5 py-3 text-canvas">
               {m.content}
             </div>
           ) : (
             <div key={m.id} className="flex gap-3">
-              <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-terracotta font-serif text-sm font-semibold text-white" aria-hidden="true">
+              <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-full bg-brand font-display text-sm font-semibold text-white" aria-hidden="true">
                 S
               </span>
-              <div className="min-w-0 flex-1 rounded-3xl rounded-tl-md border border-sand bg-cream px-5 py-4">
+              <div className="min-w-0 flex-1 rounded-2xl rounded-tl-md border border-line bg-canvas px-5 py-4">
                 <Markdown>{m.content}</Markdown>
                 {m.pages.length > 0 && (
-                  <p className="mt-3 text-xs text-stone">
+                  <p className="mt-3 text-xs text-subtle">
                     From your notes: {m.pages.map((p) => `${unit} ${p}`).join(", ")}
                   </p>
                 )}
@@ -82,8 +82,8 @@ export default function AskTab({ guide }: { guide: GuideDetail }) {
           ),
         )}
         {sending && (
-          <div className="flex items-center gap-3 text-stone">
-            <span className="grid size-9 place-items-center rounded-full bg-terracotta-soft text-terracotta-deep">
+          <div className="flex items-center gap-3 text-subtle">
+            <span className="grid size-9 place-items-center rounded-full bg-brand-soft text-brand-deep">
               <Spinner className="size-4" />
             </span>
             Looking through your notes…
@@ -105,7 +105,7 @@ export default function AskTab({ guide }: { guide: GuideDetail }) {
             type="button"
             onClick={() => send(s)}
             disabled={sending}
-            className="rounded-full border border-sand bg-cream px-3.5 py-1.5 text-sm text-charcoal transition hover:border-terracotta/50 hover:bg-cream-deep disabled:opacity-50"
+            className="rounded-full border border-line bg-canvas px-3.5 py-1.5 text-sm text-ink transition hover:border-brand/50 hover:bg-muted disabled:opacity-50"
           >
             {s}
           </button>
@@ -117,7 +117,7 @@ export default function AskTab({ guide }: { guide: GuideDetail }) {
           e.preventDefault();
           send(draft);
         }}
-        className="sticky bottom-4 mt-4 flex items-end gap-2 rounded-3xl border border-sand bg-white p-2 shadow-lg"
+        className="sticky bottom-4 mt-4 flex items-end gap-2 rounded-2xl border border-line bg-white p-2 shadow-lg"
       >
         <label htmlFor="ask" className="sr-only">
           Your question
@@ -141,7 +141,7 @@ export default function AskTab({ guide }: { guide: GuideDetail }) {
           type="submit"
           disabled={sending || !draft.trim()}
           aria-label="Send question"
-          className="grid size-12 shrink-0 place-items-center rounded-full bg-terracotta text-white transition hover:bg-terracotta-deep disabled:opacity-40"
+          className="grid size-12 shrink-0 place-items-center rounded-full bg-brand text-white transition hover:bg-brand-deep disabled:opacity-40"
         >
           <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M5 12h14M13 6l6 6-6 6" />

@@ -649,7 +649,7 @@ export default function AudioPlayer({
 
   if (segments.length === 0) {
     return (
-      <div className="rounded-3xl border border-sand bg-cream p-8 text-center text-stone">
+      <div className="rounded-2xl border border-line bg-canvas p-8 text-center text-subtle">
         This episode has no audio yet.
       </div>
     );
@@ -658,7 +658,7 @@ export default function AudioPlayer({
   return (
     <section
       aria-label={title ? `Audio lesson: ${title}` : "Audio lesson"}
-      className="mx-auto flex w-full max-w-3xl flex-col rounded-3xl border border-sand bg-cream shadow-[0_1px_0_rgba(41,37,36,0.04),0_12px_40px_-16px_rgba(41,37,36,0.25)]"
+      className="mx-auto flex w-full max-w-3xl flex-col rounded-2xl border border-line bg-canvas shadow-[0_1px_0_rgba(41,37,36,0.04),0_12px_40px_-16px_rgba(41,37,36,0.25)]"
     >
       {/* Hidden media elements */}
       <audio
@@ -678,12 +678,12 @@ export default function AudioPlayer({
       <audio ref={answerAudioRef} onEnded={finishAnswer} />
 
       {/* Header */}
-      <header className="rounded-t-3xl border-b border-sand px-5 pt-6 pb-5 sm:px-8">
-        <p className="text-xs font-semibold tracking-[0.18em] text-terracotta-deep uppercase">Study session</p>
-        <h2 className="mt-1 font-serif text-2xl leading-tight font-semibold text-balance sm:text-3xl">
+      <header className="rounded-t-3xl border-b border-line px-5 pt-6 pb-5 sm:px-8">
+        <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">Study session</p>
+        <h2 className="mt-1 font-display text-2xl leading-tight font-semibold text-balance sm:text-3xl">
           {title ?? "Your lecture, as a conversation"}
         </h2>
-        <p className="mt-1 text-sm text-stone">
+        <p className="mt-1 text-sm text-subtle">
           With Alex &amp; Sam · {formatTime(totalSec)}
         </p>
       </header>
@@ -720,9 +720,9 @@ export default function AudioPlayer({
                   aria-current={isActive ? "true" : undefined}
                   className={[
                     "group flex w-full gap-3 rounded-2xl px-3 py-3 text-left transition-colors duration-300",
-                    "focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:outline-none",
-                    isActive ? "bg-cream-deep" : "hover:bg-cream-deep/60",
-                    isQuiz ? "border-l-4 border-terracotta" : "",
+                    "focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none",
+                    isActive ? "bg-muted" : "hover:bg-muted/60",
+                    isQuiz ? "border-l-4 border-brand" : "",
                   ].join(" ")}
                 >
                   <SpeakerBadge speaker={line.speaker} active={isActive} />
@@ -730,18 +730,18 @@ export default function AudioPlayer({
                     <span className="flex items-center gap-2">
                       <span className="text-sm font-semibold">{line.speaker}</span>
                       {isQuiz && (
-                        <span className="rounded-full bg-terracotta px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white uppercase">
+                        <span className="rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white uppercase">
                           Checkpoint
                         </span>
                       )}
-                      <span className="ml-auto text-xs text-stone tabular-nums opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="ml-auto text-xs text-subtle tabular-nums opacity-0 transition-opacity group-hover:opacity-100">
                         {formatTime(line.startSec)}
                       </span>
                     </span>
                     <span
                       className={[
-                        "mt-0.5 block font-serif text-[17px] leading-relaxed transition-colors duration-300",
-                        isActive ? "text-charcoal" : isPast ? "text-stone" : "text-charcoal/80",
+                        "mt-0.5 block font-display text-[17px] leading-relaxed transition-colors duration-300",
+                        isActive ? "text-ink" : isPast ? "text-subtle" : "text-ink/80",
                       ].join(" ")}
                     >
                       {line.text}
@@ -768,7 +768,7 @@ export default function AudioPlayer({
           <button
             type="button"
             onClick={jumpToCurrentLine}
-            className="pointer-events-auto rounded-full bg-charcoal px-4 py-2 text-sm font-medium text-cream shadow-lg transition hover:bg-charcoal/85"
+            className="pointer-events-auto rounded-full bg-ink px-4 py-2 text-sm font-medium text-canvas shadow-lg transition hover:bg-ink/85"
           >
             ↓ Back to current line
           </button>
@@ -776,9 +776,9 @@ export default function AudioPlayer({
       )}
 
       {/* Controls. The transcript is sized so the whole player fits on screen. */}
-      <div className="rounded-b-3xl border-t border-sand bg-cream-deep/60 px-5 pt-4 pb-5 sm:px-8">
+      <div className="rounded-b-3xl border-t border-line bg-muted/60 px-5 pt-4 pb-5 sm:px-8">
         {resumedFrom !== null && (
-          <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-terracotta-soft/60 px-4 py-2 text-sm">
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-brand-soft/60 px-4 py-2 text-sm">
             <span>
               Picking up where you left off at <span className="font-semibold tabular-nums">{formatTime(resumedFrom)}</span>
             </span>
@@ -788,21 +788,21 @@ export default function AudioPlayer({
                 setResumedFrom(null);
                 seekTo(0, false);
               }}
-              className="shrink-0 font-semibold text-terracotta-deep underline-offset-4 hover:underline"
+              className="shrink-0 font-semibold text-brand-deep underline-offset-4 hover:underline"
             >
               Start over
             </button>
           </div>
         )}
         {finished && episodeId && (
-          <div className="mb-3 flex flex-col gap-3 rounded-2xl bg-charcoal px-4 py-3 text-cream sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-3 flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-canvas sm:flex-row sm:items-center sm:justify-between">
             <span className="text-sm">
-              <span className="font-serif text-base font-semibold">Lesson complete!</span> Lock it in while it&apos;s fresh.
+              <span className="font-display text-base font-semibold">Lesson complete!</span> Lock it in while it&apos;s fresh.
             </span>
             {flashcardCount > 0 && (
               <a
                 href={`/flashcards?episodeId=${episodeId}`}
-                className="shrink-0 rounded-full bg-terracotta px-4 py-2 text-center text-sm font-medium text-white hover:bg-terracotta-deep"
+                className="shrink-0 rounded-full bg-brand px-4 py-2 text-center text-sm font-medium text-white hover:bg-brand-deep"
               >
                 Review {flashcardCount} flashcards
               </a>
@@ -811,7 +811,7 @@ export default function AudioPlayer({
         )}
         {/* Progress */}
         <div className="flex items-center gap-3">
-          <span className="w-12 text-right text-xs text-stone tabular-nums">{formatTime(displayTime)}</span>
+          <span className="w-12 text-right text-xs text-subtle tabular-nums">{formatTime(displayTime)}</span>
           <input
             type="range"
             min={0}
@@ -825,16 +825,16 @@ export default function AudioPlayer({
             onKeyUp={() => commitScrub()}
             onBlur={() => commitScrub()}
             style={{
-              background: `linear-gradient(to right, var(--color-terracotta) ${progressPct}%, var(--color-sand) ${progressPct}%)`,
+              background: `linear-gradient(to right, var(--color-brand) ${progressPct}%, var(--color-line) ${progressPct}%)`,
             }}
             className={[
               "h-1.5 flex-1 cursor-pointer appearance-none rounded-full",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2 focus-visible:ring-offset-cream",
-              "[&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-terracotta [&::-webkit-slider-thumb]:shadow",
-              "[&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-terracotta",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
+              "[&::-webkit-slider-thumb]:size-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-brand [&::-webkit-slider-thumb]:shadow",
+              "[&::-moz-range-thumb]:size-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-brand",
             ].join(" ")}
           />
-          <span className="w-12 text-xs text-stone tabular-nums">{formatTime(totalSec)}</span>
+          <span className="w-12 text-xs text-subtle tabular-nums">{formatTime(totalSec)}</span>
         </div>
 
         {/* Buttons */}
@@ -847,7 +847,7 @@ export default function AudioPlayer({
               type="button"
               onClick={togglePlay}
               aria-label={isPlaying ? "Pause" : "Play"}
-              className="grid size-14 place-items-center rounded-full bg-charcoal text-cream shadow-md transition hover:bg-charcoal/90 focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-2 focus-visible:ring-offset-cream focus-visible:outline-none active:scale-95"
+              className="grid size-14 place-items-center rounded-full bg-ink text-canvas shadow-md transition hover:bg-ink/90 focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-canvas focus-visible:outline-none active:scale-95"
             >
               {isPlaying && isBuffering ? <Spinner /> : isPlaying ? <PauseIcon /> : <PlayIcon />}
             </button>
@@ -859,7 +859,7 @@ export default function AudioPlayer({
               onClick={cycleSpeed}
               aria-label={`Playback speed ${speed}×. Change speed`}
               title="Playback speed"
-              className="ml-1 min-w-14 rounded-full border border-sand px-2.5 py-1.5 text-sm font-semibold tabular-nums transition hover:border-terracotta/50 hover:bg-cream focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:outline-none"
+              className="ml-1 min-w-14 rounded-full border border-line px-2.5 py-1.5 text-sm font-semibold tabular-nums transition hover:border-brand/50 hover:bg-canvas focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
             >
               {speed}×
             </button>
@@ -867,16 +867,16 @@ export default function AudioPlayer({
 
           {/* Interrupt & Ask */}
           <div className="flex items-center gap-3">
-            <p className="hidden text-right text-sm leading-snug text-stone sm:block" aria-hidden="true">
+            <p className="hidden text-right text-sm leading-snug text-subtle sm:block" aria-hidden="true">
               {askLabel(askState)}
             </p>
             {askState === "thinking" && (
-              <button type="button" onClick={cancelQuestion} className="text-sm font-medium text-terracotta-deep underline-offset-4 hover:underline">
+              <button type="button" onClick={cancelQuestion} className="text-sm font-medium text-brand-deep underline-offset-4 hover:underline">
                 Cancel
               </button>
             )}
             {askState === "answering" && (
-              <button type="button" onClick={skipAnswer} className="text-sm font-medium text-terracotta-deep underline-offset-4 hover:underline">
+              <button type="button" onClick={skipAnswer} className="text-sm font-medium text-brand-deep underline-offset-4 hover:underline">
                 Skip answer
               </button>
             )}
@@ -892,13 +892,13 @@ export default function AudioPlayer({
               aria-label={askState === "recording" ? "Stop recording and send question" : "Interrupt and ask a question"}
               className={[
                 "relative grid size-14 shrink-0 touch-none place-items-center rounded-full text-white shadow-md transition select-none",
-                "focus-visible:ring-2 focus-visible:ring-charcoal focus-visible:ring-offset-2 focus-visible:ring-offset-cream focus-visible:outline-none",
+                "focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-canvas focus-visible:outline-none",
                 "disabled:cursor-not-allowed disabled:opacity-60",
-                askState === "recording" ? "scale-110 bg-terracotta-deep" : "bg-terracotta hover:bg-terracotta-deep active:scale-95",
+                askState === "recording" ? "scale-110 bg-brand-deep" : "bg-brand hover:bg-brand-deep active:scale-95",
               ].join(" ")}
             >
               {askState === "recording" && (
-                <span className="absolute inset-0 animate-ping rounded-full bg-terracotta/40 motion-reduce:animate-none" aria-hidden="true" />
+                <span className="absolute inset-0 animate-ping rounded-full bg-brand/40 motion-reduce:animate-none" aria-hidden="true" />
               )}
               {askState === "thinking" || askState === "starting" ? <Spinner /> : <MicIcon />}
             </button>
@@ -906,7 +906,7 @@ export default function AudioPlayer({
         </div>
 
         {/* Status line for screen readers and small screens */}
-        <p role="status" aria-live="polite" className="mt-3 min-h-5 text-sm text-stone sm:text-right">
+        <p role="status" aria-live="polite" className="mt-3 min-h-5 text-sm text-subtle sm:text-right">
           <span className="sm:hidden">{askHint ?? playerError ?? askLabel(askState)}</span>
           <span className="hidden sm:inline">{askHint ?? playerError ?? ""}</span>
         </p>
@@ -940,8 +940,8 @@ function SpeakerBadge({ speaker, active }: { speaker: "Alex" | "Sam"; active: bo
     <span
       aria-hidden="true"
       className={[
-        "mt-0.5 grid size-9 shrink-0 place-items-center rounded-full font-serif text-sm font-semibold transition-transform duration-300",
-        isAlex ? "bg-terracotta text-white" : "border-2 border-charcoal bg-cream text-charcoal",
+        "mt-0.5 grid size-9 shrink-0 place-items-center rounded-full font-display text-sm font-semibold transition-transform duration-300",
+        isAlex ? "bg-brand text-white" : "border-2 border-ink bg-canvas text-ink",
         active ? "scale-110" : "",
       ].join(" ")}
     >
@@ -961,20 +961,20 @@ function InterjectionCard({
 }) {
   const { status, question, answer, error } = interjection;
   return (
-    <div className="my-2 ml-12 rounded-2xl border border-sand bg-white/70 p-4 sm:ml-14">
-      <p className="text-xs font-semibold tracking-wide text-terracotta-deep uppercase">You asked</p>
-      {status === "pending" && <p className="mt-1 text-sm text-stone italic">Listening to your question…</p>}
-      {status === "error" && <p className="mt-1 text-sm text-terracotta-deep">{error}</p>}
+    <div className="my-2 ml-12 rounded-2xl border border-line bg-white/70 p-4 sm:ml-14">
+      <p className="text-xs font-semibold tracking-wide text-brand-deep uppercase">You asked</p>
+      {status === "pending" && <p className="mt-1 text-sm text-subtle italic">Listening to your question…</p>}
+      {status === "error" && <p className="mt-1 text-sm text-brand-deep">{error}</p>}
       {status === "done" && (
         <>
           <p className="mt-1 text-[15px] font-medium">“{question}”</p>
-          <p className="mt-3 text-xs font-semibold tracking-wide text-stone uppercase">Alex</p>
-          <p className="mt-1 font-serif text-[17px] leading-relaxed">{answer}</p>
+          <p className="mt-3 text-xs font-semibold tracking-wide text-subtle uppercase">Alex</p>
+          <p className="mt-1 font-display text-[17px] leading-relaxed">{answer}</p>
           <button
             type="button"
             onClick={onReplay}
             disabled={disabled}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-sand px-3 py-1 text-sm font-medium transition hover:border-terracotta hover:text-terracotta-deep disabled:opacity-50"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-sm font-medium transition hover:border-brand hover:text-brand-deep disabled:opacity-50"
           >
             <PlayIcon className="size-3.5" /> Play answer
           </button>
@@ -991,7 +991,7 @@ function IconButton({ label, onClick, children }: { label: string; onClick: () =
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="grid size-11 place-items-center rounded-full text-charcoal transition hover:bg-sand/70 focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:outline-none active:scale-95"
+      className="grid size-11 place-items-center rounded-full text-ink transition hover:bg-line/70 focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none active:scale-95"
     >
       {children}
     </button>

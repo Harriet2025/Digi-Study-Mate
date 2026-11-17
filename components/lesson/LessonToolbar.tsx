@@ -43,7 +43,7 @@ export default function LessonToolbar({
         <a
           href={downloadUrl}
           download
-          className="inline-flex items-center gap-2 rounded-full border border-sand bg-cream px-5 py-2.5 text-sm font-medium transition hover:border-terracotta/50 hover:bg-cream-deep focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:outline-none"
+          className="inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-5 py-2.5 text-sm font-medium transition hover:border-brand/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
         >
           <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 4v12m0 0-4-4m4 4 4-4M5 20h14" />
@@ -54,7 +54,7 @@ export default function LessonToolbar({
       <button
         type="button"
         onClick={share}
-        className="inline-flex items-center gap-2 rounded-full border border-sand bg-cream px-5 py-2.5 text-sm font-medium transition hover:border-terracotta/50 hover:bg-cream-deep focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:outline-none"
+        className="inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-5 py-2.5 text-sm font-medium transition hover:border-brand/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
       >
         <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="18" cy="5" r="2.5" />

@@ -105,13 +105,13 @@ function Stepper({ current }: { current: 1 | 2 }) {
           <li key={label} className="flex items-center gap-2" aria-current={state === "current" ? "step" : undefined}>
             <span
               className={`grid size-7 place-items-center rounded-full text-xs font-semibold ${
-                state === "done" ? "bg-sage text-white" : state === "current" ? "bg-terracotta text-white" : "bg-cream-deep text-stone"
+                state === "done" ? "bg-success text-white" : state === "current" ? "bg-brand text-white" : "bg-muted text-subtle"
               }`}
             >
               {state === "done" ? "✓" : n}
             </span>
-            <span className={state === "todo" ? "text-stone" : "font-medium"}>{label}</span>
-            {n < steps.length && <span className="mx-1 h-px w-6 bg-sand sm:w-10" aria-hidden="true" />}
+            <span className={state === "todo" ? "text-subtle" : "font-medium"}>{label}</span>
+            {n < steps.length && <span className="mx-1 h-px w-6 bg-line sm:w-10" aria-hidden="true" />}
           </li>
         );
       })}
@@ -136,13 +136,13 @@ function DropZone({ onFile }: { onFile: (file: File) => void }) {
         const file = e.dataTransfer.files[0];
         if (file) onFile(file);
       }}
-      className={`relative flex flex-col items-center rounded-[2rem] border-2 border-dashed px-6 py-16 text-center transition ${
-        dragging ? "border-terracotta bg-terracotta-soft/40" : "border-sand bg-cream-deep/40 hover:border-terracotta/50"
+      className={`relative flex flex-col items-center rounded-2xl border-2 border-dashed px-6 py-16 text-center transition ${
+        dragging ? "border-brand bg-brand-soft/40" : "border-line bg-muted/40 hover:border-brand/50"
       }`}
     >
-      <div className="grid size-16 place-items-center rounded-2xl bg-terracotta text-white shadow-md shadow-terracotta/25">{Icons.upload}</div>
-      <h2 className="mt-5 font-serif text-2xl font-semibold">Drop your slides or notes here</h2>
-      <p className="mt-2 text-stone">PDF or PowerPoint (.pptx), up to 25 MB</p>
+      <div className="">{Icons.upload}</div>
+      <h2 className="mt-5 font-display text-2xl font-semibold">Drop your slides or notes here</h2>
+      <p className="mt-2 text-subtle">PDF or PowerPoint (.pptx), up to 25 MB</p>
       <Button className="mt-6" onClick={() => inputRef.current?.click()}>
         Choose a file
       </Button>
@@ -157,7 +157,7 @@ function DropZone({ onFile }: { onFile: (file: File) => void }) {
           e.target.value = "";
         }}
       />
-      <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-stone">
+      <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-subtle">
         <li>✓ Headers, footers and page numbers removed</li>
         <li>✓ Tables and speaker notes kept</li>
         <li>✓ Scanned PDFs need OCR first</li>
@@ -170,11 +170,11 @@ function UploadingCard({ fileName, fraction }: { fileName: string; fraction: num
   const sent = fraction >= 1;
   return (
     <Card className="py-10 text-center">
-      <Spinner className="mx-auto size-8 text-terracotta" />
-      <p className="mt-4 font-serif text-xl font-semibold">{sent ? "Reading your document…" : "Uploading…"}</p>
-      <p className="mt-1 text-sm text-stone">{fileName}</p>
+      <Spinner className="mx-auto size-8 text-brand" />
+      <p className="mt-4 font-display text-xl font-semibold">{sent ? "Reading your document…" : "Uploading…"}</p>
+      <p className="mt-1 text-sm text-subtle">{fileName}</p>
       <ProgressBar value={sent ? 100 : fraction * 100} className="mx-auto mt-6 max-w-sm" />
-      {sent && <p className="mt-3 text-xs text-stone">Pulling out the text and cleaning it up. This takes a few seconds.</p>}
+      {sent && <p className="mt-3 text-xs text-subtle">Pulling out the text and cleaning it up. This takes a few seconds.</p>}
     </Card>
   );
 }
@@ -236,12 +236,12 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
   return (
     <form onSubmit={submit} className="space-y-6">
       <Card className="flex items-center gap-4">
-        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-terracotta-soft text-sm font-bold text-terracotta-deep uppercase">
+        <span className="">
           {doc.sourceType}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{doc.filename}</p>
-          <p className="text-sm text-stone">
+          <p className="text-sm text-subtle">
             {doc.pageCount} {unit}s ready
           </p>
         </div>
@@ -260,7 +260,7 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={300}
-            className="w-full rounded-2xl border border-sand bg-white px-4 py-3 focus:border-terracotta focus:ring-2 focus:ring-terracotta/30 focus:outline-none"
+            className="w-full rounded-2xl border border-line bg-white px-4 py-3 focus:border-brand focus:ring-2 focus:ring-brand/30 focus:outline-none"
           />
         </div>
 
@@ -268,15 +268,15 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
           <legend className="mb-2 text-sm font-semibold">Which {unit}s should this lesson cover?</legend>
           <div className="flex flex-wrap items-center gap-3">
             <NumberField label={`From ${unit}`} value={pageStart} min={1} max={doc.pageCount} onChange={setPageStart} />
-            <span className="text-stone" aria-hidden="true">to</span>
+            <span className="text-subtle" aria-hidden="true">to</span>
             <NumberField label={`To ${unit}`} value={pageEnd} min={pageStart} max={doc.pageCount} onChange={setPageEnd} />
-            <span className="text-sm text-stone">
-              of {doc.pageCount} · <span className="font-medium text-charcoal">{pageCount} {unit}{pageCount === 1 ? "" : "s"}</span>
+            <span className="text-sm text-subtle">
+              of {doc.pageCount} · <span className="font-medium text-ink">{pageCount} {unit}{pageCount === 1 ? "" : "s"}</span>
             </span>
           </div>
-          {!rangeValid && <p className="mt-2 text-sm text-terracotta-deep">Choose a range between 1 and {doc.pageCount}.</p>}
+          {!rangeValid && <p className="mt-2 text-sm text-brand-deep">Choose a range between 1 and {doc.pageCount}.</p>}
           {rangeValid && pageCount > SUGGESTED_PAGES && (
-            <p className="mt-2 text-sm text-stone">
+            <p className="mt-2 text-sm text-subtle">
               Tip: about {SUGGESTED_PAGES} {unit}s per lesson works best on the free AI plan. Longer ranges may be too much in one go.
             </p>
           )}
@@ -292,7 +292,7 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
             id="language"
             value={language}
             onChange={(e) => setLanguage(e.target.value as LessonLanguage)}
-            className="w-full rounded-2xl border border-sand bg-white px-4 py-3 sm:w-64"
+            className="w-full rounded-2xl border border-line bg-white px-4 py-3 sm:w-64"
           >
             {LANGUAGE_OPTIONS.map((l) => (
               <option key={l.value} value={l.value}>
@@ -300,13 +300,13 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
               </option>
             ))}
           </select>
-          <p className="mt-1.5 text-xs text-stone">Your lesson can be in another language, even if your notes are in English.</p>
+          <p className="mt-1.5 text-xs text-subtle">Your lesson can be in another language, even if your notes are in English.</p>
         </div>
       </Card>
 
-      <Card className="space-y-5 bg-cream-deep/50">
+      <Card className="space-y-5 bg-muted/50">
         <p className="text-sm font-semibold">You&apos;ll get</p>
-        <ul className="grid gap-2 text-sm sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           {[
             ["📖", "A step-by-step lesson in simple language"],
             ["🧭", "Diagrams, analogies and worked examples"],
@@ -321,11 +321,11 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
             </li>
           ))}
         </ul>
-        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-sand bg-cream px-4 py-3">
-          <input type="checkbox" checked={withAudio} onChange={(e) => setWithAudio(e.target.checked)} className="mt-1 size-4 accent-terracotta" />
+        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-canvas px-4 py-3">
+          <input type="checkbox" checked={withAudio} onChange={(e) => setWithAudio(e.target.checked)} className="mt-1 size-4 accent-brand" />
           <span>
             <span className="block font-semibold">Also make an audio version with Alex &amp; Sam</span>
-            <span className="block text-sm text-stone">A podcast-style lesson for listening on the go. Uses ElevenLabs voice credit.</span>
+            <span className="block text-sm text-subtle">A podcast-style lesson for listening on the go. Uses ElevenLabs voice credit.</span>
           </span>
         </label>
         {withAudio && (
@@ -341,7 +341,7 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
       <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
           href={`/practice?documentId=${doc.documentId}&pageStart=${pageStart}&pageEnd=${pageEnd}`}
-          className="text-center text-sm font-medium text-terracotta-deep underline-offset-4 hover:underline"
+          className="text-center text-sm font-medium text-brand-deep underline-offset-4 hover:underline"
         >
           Practise defense questions on these {unit}s instead
         </Link>
@@ -377,7 +377,7 @@ function NumberField({
         min={min}
         max={max}
         onChange={(e) => onChange(Number(e.target.value) || 0)}
-        className="w-24 rounded-2xl border border-sand bg-white px-4 py-3 text-center tabular-nums focus:border-terracotta focus:ring-2 focus:ring-terracotta/30 focus:outline-none"
+        className="w-24 rounded-2xl border border-line bg-white px-4 py-3 text-center tabular-nums focus:border-brand focus:ring-2 focus:ring-brand/30 focus:outline-none"
       />
     </label>
   );

@@ -19,7 +19,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Float, Reveal } from "@/components/home/Motion";
 import { DrawLine } from "@/components/motion/Gsap";
-import FeatureArc from "@/components/home/FeatureArc";
+import FeatureDeck from "@/components/home/FeatureDeck";
 import { FEATURES } from "@/components/home/features";
 import StepsShowcase from "@/components/home/StepsShowcase";
 import Typewriter from "@/components/home/Typewriter";
@@ -175,9 +175,9 @@ function Features() {
         <Eyebrow>Features</Eyebrow>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Everything you need to study</h2>
       </Reveal>
-      {/* Phones: cards glide along an arc. Tablets: 2 columns. Desktops: 4 columns. */}
+      {/* Phones: a stacked deck that deals itself. Tablets: 2 columns. Desktops: 4 columns. */}
       <div className="mt-8">
-        <FeatureArc />
+        <FeatureDeck />
       </div>
       <ul className="mx-auto hidden max-w-6xl grid-cols-2 gap-4 px-6 md:mt-12 md:grid lg:grid-cols-4">
         {FEATURES.map((f, i) => (

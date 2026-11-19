@@ -24,7 +24,7 @@ export const SITE_NAV: { href: string; label: string; icon: LucideIcon }[] = [
 /** The app menu for anyone with a session (including free-trial guests); the site menu otherwise. */
 export function useNavItems() {
   const user = useCurrentUser();
-  return { user, items: user === undefined ? [] : user ? APP_NAV : SITE_NAV };
+  return { user, items: user === undefined ? [] : user && !user.isGuest ? APP_NAV : SITE_NAV };
 }
 
 export function isActive(pathname: string, href: string) {

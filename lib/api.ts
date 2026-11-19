@@ -148,11 +148,20 @@ export interface PracticeSet {
 
 export interface Insights {
   streak: { current: number; longest: number; activeToday: boolean };
-  calendar: { date: string; listenMinutes: number; reviews: number; defense: number; active: boolean }[];
-  totals: { listenMinutes: number; lessons: number; documents: number; cardsReviewed: number; defenseAnswers: number };
+  calendar: { date: string; listenMinutes: number; reviews: number; defense: number; quizzes: number; questionsAsked: number; active: boolean }[];
+  totals: {
+    listenMinutes: number;
+    lessons: number;
+    documents: number;
+    cardsReviewed: number;
+    defenseAnswers: number;
+    studySpaces: number;
+    quizzesTaken: number;
+    questionsAsked: number;
+  };
   flashcards: DeckStats;
   weakSpots: {
-    flashcards: { id: number; front: string; lapses: number; episodeId: string; lessonTitle: string }[];
+    flashcards: { id: number; front: string; lapses: number; episodeId: string | null; guideId: string | null; lessonTitle: string }[];
     defense: { setId: string; questionId: string; question: string; bestScore: number; attempts: number; title: string | null }[];
   };
 }

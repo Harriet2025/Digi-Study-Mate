@@ -1,8 +1,26 @@
 "use client";
 
-import { BookOpenText } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpenText,
+  FileText,
+  Headphones,
+  Layers,
+  Library,
+  type LucideIcon,
+  Mic,
+  Plus,
+  Search,
+  Trash2,
+  Trophy,
+  Upload,
+} from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import AppHero from "@/components/app/AppHero";
+import { useCurrentUser } from "@/components/auth/useCurrentUser";
+import { Float } from "@/components/home/Motion";
+import { CountUp, RevealGroup } from "@/components/motion/Gsap";
 import {
   api,
   ApiError,
@@ -15,11 +33,15 @@ import {
   type LibraryData,
   type QuestionSetSummary,
 } from "@/lib/api";
-import { Button, Card, EmptyState, ErrorNote, Icons, LinkButton, LoadingBlock, Pill, ProgressBar, Spinner } from "@/components/ui";
+import { ErrorNote, Icons, LinkButton, LoadingBlock, Pill, ProgressBar, Spinner } from "@/components/ui";
+
+type Doc = LibraryData["documents"][number];
 
 export default function LibraryView() {
+  const user = useCurrentUser();
   const [data, setData] = useState<LibraryData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -46,47 +68,69 @@ export default function LibraryView() {
     return () => window.clearInterval(timer);
   }, [building, load]);
 
+  const latest = useMemo(() => {
+    const ready = (data?.documents ?? []).flatMap((d) => d.guides.filter((g) => g.status === "ready"));
+    return ready.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""))[0] ?? null;
+  }, [data]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!data || !q) return data?.documents ?? [];
+    return data.documents.filter((d) => d.filename.toLowerCase().includes(q) || d.guides.some((g) => g.title.toLowerCase().includes(q)));
+  }, [data, query]);
+
+  const firstName = user?.name.split(/\s+/)[0];
+  const hero = (stats?: Stats) => (
+    <AppHero
+      icon={Library}
+      eyebrow="My library"
+      title={firstName ? `Welcome back, ${firstName}` : "Your library"}
+      description="Everything you're studying, in one place."
+      actions={
+        <LinkButton href="/upload">
+          <Upload className="size-4" aria-hidden="true" /> Upload notes
+        </LinkButton>
+      }
+      aside={stats ? <StatGrid stats={stats} /> : undefined}
+    />
+  );
+
   if (error && !data) return <ErrorNote onRetry={load}>{error}</ErrorNote>;
   if (!data) return <LoadingBlock label="Loading your library…" />;
 
   if (data.documents.length === 0) {
     return (
-      <EmptyState
-        icon={Icons.upload}
-        title="Your library is empty"
-        action={<LinkButton href="/upload">Upload your first notes</LinkButton>}
-      >
-        Upload a PDF or PowerPoint and Alex &amp; Sam will turn it into a lesson you can listen to.
-      </EmptyState>
+      <div className="space-y-8">
+        {hero()}
+        <EmptyLibrary />
+      </div>
     );
   }
 
+  const stats: Stats = {
+    documents: data.documents.length,
+    spaces: data.documents.reduce((n, d) => n + d.guides.filter((g) => g.status === "ready").length, 0),
+    due: data.flashcards.due,
+    audio: data.documents.reduce((n, d) => n + d.episodes.filter((e) => e.status === "ready").length, 0),
+  };
+
   return (
     <div className="space-y-12">
+      {hero(stats)}
       {error && <ErrorNote onRetry={load}>{error}</ErrorNote>}
 
-      {/* Quick stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Documents" value={data.documents.length} />
-        <StatCard label="Study spaces" value={data.documents.reduce((n, d) => n + d.guides.filter((g) => g.status === "ready").length, 0)} />
-        <Link href="/flashcards" className="group rounded-2xl bg-brand p-5 text-white transition hover:bg-brand-deep">
-          <p className="text-sm text-white/80">Flashcards due</p>
-          <p className="mt-1 flex items-baseline justify-between font-display text-4xl font-semibold">
-            {data.flashcards.due}
-            <span className="font-sans text-sm font-medium text-white/90 group-hover:underline">Review →</span>
-          </p>
-        </Link>
-      </div>
+      {latest && <ContinueCard guide={latest} />}
 
       {data.continueListening.length > 0 && (
         <section>
-          <h2 className="font-display text-2xl font-semibold">Continue listening</h2>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <SectionTitle icon={Headphones} title="Continue listening" />
+          <RevealGroup className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.continueListening.map((e) => (
               <Link
+                data-reveal
                 key={e.scriptId}
                 href={`/listen/${e.scriptId}`}
-                className="group rounded-2xl border border-line bg-canvas p-5 transition hover:-translate-y-0.5 hover:shadow-lg"
+                className="group rounded-2xl border border-line bg-canvas p-5 transition hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-lg hover:shadow-ink/5"
               >
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-display text-lg leading-snug font-semibold">{e.title}</p>
@@ -100,32 +144,216 @@ export default function LibraryView() {
                 </p>
               </Link>
             ))}
-          </div>
+          </RevealGroup>
         </section>
       )}
 
       <section>
-        <h2 className="font-display text-2xl font-semibold">Your documents</h2>
-        <div className="mt-4 space-y-5">
-          {data.documents.map((doc) => (
-            <DocumentCard key={doc.documentId} doc={doc} onChanged={load} />
-          ))}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <SectionTitle icon={FileText} title="Your documents" count={data.documents.length} />
+          <label className="relative w-full sm:w-72">
+            <span className="sr-only">Search your library</span>
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-subtle" aria-hidden="true" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search notes and lessons"
+              className="w-full rounded-full border border-line bg-canvas py-2.5 pr-4 pl-10 text-sm focus:border-brand focus:ring-2 focus:ring-brand/20 focus:outline-none"
+            />
+          </label>
         </div>
+        {visible.length === 0 ? (
+          <p className="mt-6 rounded-2xl border border-dashed border-line px-6 py-10 text-center text-subtle">Nothing matches “{query}”.</p>
+        ) : (
+          <RevealGroup className="mt-6 space-y-6">
+            {visible.map((doc) => (
+              <div data-reveal key={doc.documentId}>
+                <DocumentCard doc={doc} onChanged={load} />
+              </div>
+            ))}
+          </RevealGroup>
+        )}
       </section>
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+// ---------------------------------------------------------------------------
+
+type Stats = { documents: number; spaces: number; due: number; audio: number };
+
+function StatGrid({ stats }: { stats: Stats }) {
+  const tiles: { icon: LucideIcon; label: string; value: number; href?: string }[] = [
+    { icon: FileText, label: "Documents", value: stats.documents },
+    { icon: BookOpenText, label: "Study spaces", value: stats.spaces },
+    { icon: Layers, label: "Cards due", value: stats.due, href: "/flashcards" },
+    { icon: Headphones, label: "Audio lessons", value: stats.audio },
+  ];
   return (
-    <div className="rounded-2xl border border-line bg-canvas p-5">
-      <p className="text-sm text-subtle">{label}</p>
-      <p className="mt-1 font-display text-4xl font-semibold">{value}</p>
+    <div className="grid grid-cols-2 gap-3">
+      {tiles.map((t) => {
+        const body = (
+          <>
+            <span className={`grid size-9 place-items-center rounded-lg ${t.href ? "bg-white/15 text-white" : "bg-brand-soft text-brand"}`} aria-hidden="true">
+              <t.icon className="size-4" />
+            </span>
+            <CountUp value={t.value} className="mt-3 block font-display text-3xl font-bold" />
+            <span className={`flex items-center gap-1 text-sm ${t.href ? "text-white/80" : "text-subtle"}`}>
+              {t.label}
+              {t.href && <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" aria-hidden="true" />}
+            </span>
+          </>
+        );
+        return t.href ? (
+          <Link key={t.label} href={t.href} className="group rounded-2xl bg-brand p-4 text-white shadow-lg shadow-brand/20 transition hover:bg-brand-deep">
+            {body}
+          </Link>
+        ) : (
+          <div key={t.label} className="rounded-2xl border border-line bg-canvas/80 p-4 backdrop-blur">
+            {body}
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number]; onChanged: () => void }) {
+function SectionTitle({ icon: Icon, title, count }: { icon: LucideIcon; title: string; count?: number }) {
+  return (
+    <h2 className="flex items-center gap-3 font-display text-2xl font-bold tracking-tight">
+      <span className="grid size-9 place-items-center rounded-lg bg-brand-soft text-brand" aria-hidden="true">
+        <Icon className="size-4.5" />
+      </span>
+      {title}
+      {count !== undefined && <span className="rounded-full bg-muted px-2.5 py-0.5 font-sans text-sm font-medium text-subtle">{count}</span>}
+    </h2>
+  );
+}
+
+/** A circular score meter (e.g. best quiz result). */
+export function ScoreRing({ value, size = 64, stroke = 6, light = false }: { value: number | null; size?: number; stroke?: number; light?: boolean }) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = value ?? 0;
+  return (
+    <span className="relative inline-grid place-items-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="currentColor" strokeWidth={stroke} className={light ? "text-white/15" : "text-muted"} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c - (pct / 100) * c}
+          className={`transition-[stroke-dashoffset] duration-1000 ${light ? "text-white" : pct >= 75 ? "text-success" : "text-brand"}`}
+        />
+      </svg>
+      <span className={`absolute text-xs font-bold ${light ? "text-white" : "text-ink"}`}>{value === null ? "–" : `${value}%`}</span>
+    </span>
+  );
+}
+
+function ContinueCard({ guide }: { guide: GuideSummary }) {
+  return (
+    <section className="relative overflow-hidden rounded-3xl bg-ink p-6 text-canvas sm:p-10">
+      <div aria-hidden="true" className="absolute -top-20 -right-10 size-72 rounded-full bg-brand/40 blur-3xl" />
+      <div className="relative grid grid-cols-1 items-center gap-8 md:grid-cols-[1fr_auto]">
+        <div>
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand-soft uppercase">Pick up where you left off</p>
+          <h2 className="mt-3 font-display text-2xl leading-tight font-bold text-balance sm:text-4xl">{guide.title}</h2>
+          <div className="mt-4 flex flex-wrap gap-2 text-sm text-canvas/70">
+            <MetaChip icon={BookOpenText}>{guide.sectionCount} steps</MetaChip>
+            <MetaChip icon={Layers}>{guide.flashcardCount} cards</MetaChip>
+            {guide.pageStart && <MetaChip icon={FileText}>pp. {guide.pageStart}–{guide.pageEnd}</MetaChip>}
+          </div>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link
+              href={`/study/${guide.guideId}`}
+              className="inline-flex items-center gap-2 rounded-full bg-canvas px-6 py-3 font-medium text-ink transition hover:bg-brand-soft"
+            >
+              Continue studying <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+            <Link
+              href={`/study/${guide.guideId}?tab=quiz`}
+              className="inline-flex items-center gap-2 rounded-full border border-canvas/20 px-6 py-3 font-medium transition hover:bg-canvas/10"
+            >
+              <Trophy className="size-4" aria-hidden="true" /> {guide.bestQuizScore === null ? "Take the quiz" : "Retake the quiz"}
+            </Link>
+          </div>
+        </div>
+        <Float distance={8} duration={6} className="hidden md:block">
+          <div className="rounded-2xl bg-canvas/5 p-6 text-center ring-1 ring-canvas/10 backdrop-blur">
+            <ScoreRing value={guide.bestQuizScore} size={112} stroke={9} light />
+            <p className="mt-3 text-sm text-canvas/70">Best quiz score</p>
+          </div>
+        </Float>
+      </div>
+    </section>
+  );
+}
+
+function MetaChip({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-canvas/10 px-3 py-1">
+      <Icon className="size-3.5" aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
+
+function EmptyLibrary() {
+  const steps: { icon: LucideIcon; title: string; body: string }[] = [
+    { icon: Upload, title: "Upload", body: "A PDF or PowerPoint from your course." },
+    { icon: BookOpenText, title: "Learn", body: "A step-by-step lesson with diagrams." },
+    { icon: Trophy, title: "Practise", body: "Flashcards, a rated quiz and a tutor." },
+  ];
+  return (
+    <section className="rounded-3xl border border-dashed border-line bg-canvas p-8 text-center sm:p-12">
+      <h2 className="font-display text-2xl font-bold">Your library is empty</h2>
+      <p className="mt-2 text-subtle">Three steps to your first lesson.</p>
+      <ol className="mx-auto mt-8 grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
+        {steps.map((s, i) => (
+          <li key={s.title} className="rounded-2xl bg-page p-5">
+            <span className="mx-auto grid size-11 place-items-center rounded-xl bg-brand text-white">
+              <s.icon className="size-5" aria-hidden="true" />
+            </span>
+            <p className="mt-3 font-semibold">
+              {i + 1}. {s.title}
+            </p>
+            <p className="text-sm text-subtle">{s.body}</p>
+          </li>
+        ))}
+      </ol>
+      <LinkButton href="/upload" className="mt-8">
+        <Upload className="size-4" aria-hidden="true" /> Upload your first notes
+      </LinkButton>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function DocumentCover({ type, pages }: { type: string; pages: number }) {
+  return (
+    <span
+      className="relative grid h-[4.5rem] w-14 shrink-0 place-items-center overflow-hidden rounded-lg bg-gradient-to-br from-brand to-brand-deep text-white shadow-md shadow-brand/25"
+      aria-hidden="true"
+    >
+      <span className="absolute top-0 right-0 size-4 rounded-bl-md bg-white/25" />
+      <span className="text-center leading-tight">
+        <span className="block text-[11px] font-bold tracking-wide uppercase">{type}</span>
+        <span className="block text-[10px] text-white/70">{pages} pp</span>
+      </span>
+    </span>
+  );
+}
+
+function DocumentCard({ doc, onChanged }: { doc: Doc; onChanged: () => void }) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -142,76 +370,105 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
   };
 
   return (
-    <Card className="p-0">
-      <div className="flex flex-col gap-4 border-b border-line p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <article className="overflow-hidden rounded-3xl border border-line bg-canvas shadow-sm shadow-ink/[0.03]">
+      <header className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
         <div className="flex min-w-0 items-center gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-xs font-bold text-brand-deep uppercase">
-            {doc.sourceType}
-          </span>
+          <DocumentCover type={doc.sourceType} pages={doc.pageCount} />
           <div className="min-w-0">
-            <h3 className="truncate font-display text-xl font-semibold">{doc.filename.replace(/\.(pdf|pptx)$/i, "")}</h3>
+            <h3 className="truncate font-display text-xl font-bold">{doc.filename.replace(/\.(pdf|pptx)$/i, "")}</h3>
             <p className="text-sm text-subtle">
               {doc.pageCount} {doc.sourceType === "pptx" ? "slides" : "pages"} · added {timeAgo(doc.createdAt)}
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <LinkButton href={`/upload?documentId=${doc.documentId}`} className="px-4 py-2">
-            + New study space
+            <Plus className="size-4" aria-hidden="true" /> Study space
           </LinkButton>
           <LinkButton href={`/practice?documentId=${doc.documentId}`} variant="secondary" className="px-4 py-2">
-            Practise questions
+            <Mic className="size-4" aria-hidden="true" /> Practise
           </LinkButton>
-          <Button variant="danger" onClick={remove} disabled={deleting} aria-label={`Delete ${doc.filename}`} className="px-3 py-2">
-            {deleting ? <Spinner className="size-4" /> : "Delete"}
-          </Button>
+          <button
+            type="button"
+            onClick={remove}
+            disabled={deleting}
+            aria-label={`Delete ${doc.filename}`}
+            title="Delete"
+            className="grid size-10 place-items-center rounded-full text-subtle transition hover:bg-brand-soft hover:text-brand-deep disabled:opacity-50"
+          >
+            {deleting ? <Spinner className="size-4" /> : <Trash2 className="size-4" aria-hidden="true" />}
+          </button>
         </div>
-      </div>
+      </header>
 
       {error && (
-        <div className="px-5 pt-4 sm:px-6">
+        <div className="px-5 pb-4 sm:px-7">
           <ErrorNote>{error}</ErrorNote>
         </div>
       )}
 
-      {doc.guides.length > 0 && (
-        <div className="border-b border-line p-5 sm:p-6">
-          <p className="text-xs font-semibold tracking-[0.14em] text-subtle uppercase">Study spaces</p>
-          <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="border-t border-line bg-page/60 p-5 sm:p-7">
+        <Label icon={BookOpenText}>Study spaces</Label>
+        {doc.guides.length === 0 ? (
+          <EmptyRow href={`/upload?documentId=${doc.documentId}`} text="No study space yet." cta="Make one" />
+        ) : (
+          <ul className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
             {doc.guides.map((g) => (
               <GuideCard key={g.guideId} guide={g} onChanged={onChanged} />
             ))}
           </ul>
-        </div>
-      )}
+        )}
 
-      <div className="grid grid-cols-1 gap-6 p-5 sm:p-6 lg:grid-cols-[1.4fr_1fr]">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-subtle uppercase">Audio lessons</p>
-          {doc.episodes.length === 0 ? (
-            <p className="mt-3 text-sm text-subtle">No audio lessons yet. Add one from a study space&apos;s Listen tab.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {doc.episodes.map((e) => (
-                <EpisodeRow key={e.scriptId} episode={e} onChanged={onChanged} />
-              ))}
-            </ul>
-          )}
-        </div>
-        <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-subtle uppercase">Defence practice</p>
-          {doc.questionSets.length === 0 ? (
-            <p className="mt-3 text-sm text-subtle">No practice sets yet.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {doc.questionSets.map((qs) => (
-                <SetRow key={qs.setId} set={qs} />
-              ))}
-            </ul>
-          )}
+        <div className="mt-7 grid grid-cols-1 gap-7 md:grid-cols-2">
+          <div>
+            <Label icon={Headphones}>Audio lessons</Label>
+            {doc.episodes.length === 0 ? (
+              <EmptyRow text="Add one from a study space's Listen tab." />
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {doc.episodes.map((e) => (
+                  <EpisodeRow key={e.scriptId} episode={e} onChanged={onChanged} />
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <Label icon={Mic}>Defence practice</Label>
+            {doc.questionSets.length === 0 ? (
+              <EmptyRow href={`/practice?documentId=${doc.documentId}`} text="No practice sets yet." cta="Start one" />
+            ) : (
+              <ul className="mt-3 space-y-2">
+                {doc.questionSets.map((qs) => (
+                  <SetRow key={qs.setId} set={qs} />
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
-    </Card>
+    </article>
+  );
+}
+
+function Label({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-subtle uppercase">
+      <Icon className="size-3.5 text-brand" aria-hidden="true" />
+      {children}
+    </p>
+  );
+}
+
+function EmptyRow({ text, href, cta }: { text: string; href?: string; cta?: string }) {
+  return (
+    <p className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-dashed border-line px-4 py-3 text-sm text-subtle">
+      {text}
+      {href && cta && (
+        <Link href={href} className="shrink-0 font-medium text-brand hover:underline">
+          {cta} →
+        </Link>
+      )}
+    </p>
   );
 }
 
@@ -227,38 +484,37 @@ function GuideCard({ guide: g, onChanged }: { guide: GuideSummary; onChanged: ()
     }
   };
   return (
-    <li className="group relative rounded-2xl border border-line bg-canvas p-4 transition hover:border-brand/40 hover:shadow-md">
-      <Link href={`/study/${g.guideId}`} className="block">
-        <div className="flex items-start gap-3">
-          <span
-            className={`grid size-11 shrink-0 place-items-center rounded-2xl text-lg ${
-              g.status === "failed" ? "bg-brand-soft text-brand-deep" : building ? "bg-muted text-brand" : "bg-brand text-white"
-            }`}
-            aria-hidden="true"
-          >
-            {building ? <Spinner className="size-5" /> : g.status === "failed" ? "!" : <BookOpenText className="size-5" />}
+    <li className="group relative rounded-2xl border border-line bg-canvas p-4 transition hover:-translate-y-0.5 hover:border-brand/30 hover:shadow-lg hover:shadow-ink/5">
+      <Link href={`/study/${g.guideId}`} className="flex items-center gap-4">
+        {building ? (
+          <span className="grid size-14 shrink-0 place-items-center rounded-full bg-muted text-brand">
+            <Spinner className="size-5" />
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="line-clamp-2 font-display text-lg leading-snug font-semibold">{g.title}</span>
-            <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-subtle">
-              {building ? (
-                <span className="text-brand-deep">
-                  {g.stageLabel}… {g.progress}%
-                </span>
-              ) : g.status === "failed" ? (
-                <span className="text-brand-deep">Couldn&apos;t be made</span>
-              ) : (
-                <>
-                  <span>{g.sectionCount} steps</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{g.flashcardCount} cards</span>
-                  {g.pageStart && <span>· pp. {g.pageStart}–{g.pageEnd}</span>}
-                  {g.bestQuizScore !== null && <Pill tone={g.bestQuizScore >= 75 ? "success" : "brand"}>Quiz {g.bestQuizScore}%</Pill>}
-                </>
-              )}
-            </span>
+        ) : g.status === "failed" ? (
+          <span className="grid size-14 shrink-0 place-items-center rounded-full bg-brand-soft font-bold text-brand-deep">!</span>
+        ) : (
+          <ScoreRing value={g.bestQuizScore} size={56} stroke={5} />
+        )}
+        <span className="min-w-0 flex-1 pr-6">
+          <span className="line-clamp-2 font-display leading-snug font-semibold">{g.title}</span>
+          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-subtle">
+            {building ? (
+              <span className="text-brand-deep">
+                {g.stageLabel}… {g.progress}%
+              </span>
+            ) : g.status === "failed" ? (
+              <span className="text-brand-deep">Couldn&apos;t be made</span>
+            ) : (
+              <>
+                <span>{g.sectionCount} steps</span>
+                <span aria-hidden="true">·</span>
+                <span>{g.flashcardCount} cards</span>
+                {g.pageStart && <span>· pp. {g.pageStart}–{g.pageEnd}</span>}
+                <span>· {g.bestQuizScore === null ? "quiz not taken" : "best quiz"}</span>
+              </>
+            )}
           </span>
-        </div>
+        </span>
       </Link>
       {!building && (
         <button
@@ -267,9 +523,7 @@ function GuideCard({ guide: g, onChanged }: { guide: GuideSummary; onChanged: ()
           aria-label={`Delete study space ${g.title}`}
           className="absolute top-3 right-3 rounded-full p-1.5 text-subtle opacity-0 transition group-hover:opacity-100 hover:bg-brand-soft hover:text-brand-deep focus-visible:opacity-100"
         >
-          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <path d="M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
-          </svg>
+          <Trash2 className="size-4" aria-hidden="true" />
         </button>
       )}
     </li>
@@ -292,7 +546,7 @@ function EpisodeRow({ episode: e, onChanged }: { episode: EpisodeSummary; onChan
   };
 
   return (
-    <li className="group flex items-center gap-3 rounded-2xl border border-line/70 bg-canvas px-4 py-3 transition hover:border-brand/40">
+    <li className="group flex items-center gap-3 rounded-2xl border border-line bg-canvas px-4 py-3 transition hover:border-brand/30">
       <Link href={`/listen/${e.scriptId}`} className="flex min-w-0 flex-1 items-center gap-3">
         <span
           className={`grid size-10 shrink-0 place-items-center rounded-full ${
@@ -316,7 +570,6 @@ function EpisodeRow({ episode: e, onChanged }: { episode: EpisodeSummary; onChan
                 <span aria-hidden="true">·</span>
                 <span>{styleLabel(e.style)}</span>
                 {language && <Pill>{language}</Pill>}
-                {e.flashcardCount > 0 && <span>· {e.flashcardCount} cards</span>}
                 {e.listening.completed && <Pill tone="success">Done</Pill>}
               </>
             )}
@@ -331,9 +584,7 @@ function EpisodeRow({ episode: e, onChanged }: { episode: EpisodeSummary; onChan
           aria-label={`Delete lesson ${e.title}`}
           className="rounded-full p-2 text-subtle opacity-60 transition hover:bg-brand-soft hover:text-brand-deep group-hover:opacity-100 focus-visible:opacity-100"
         >
-          <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-            <path d="M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
-          </svg>
+          <Trash2 className="size-4" aria-hidden="true" />
         </button>
       )}
     </li>
@@ -345,7 +596,7 @@ function SetRow({ set }: { set: QuestionSetSummary }) {
     <li>
       <Link
         href={`/practice/${set.setId}`}
-        className="flex items-center justify-between gap-3 rounded-2xl border border-line/70 bg-canvas px-4 py-3 transition hover:border-brand/40"
+        className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-canvas px-4 py-3 transition hover:border-brand/30"
       >
         <span className="min-w-0">
           <span className="block truncate font-medium">{set.title ?? "Practice set"}</span>

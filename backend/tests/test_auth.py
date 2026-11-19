@@ -140,6 +140,8 @@ def test_guest_trial_then_sign_up_keeps_the_work(client):
     assert second.status_code == 403 and second.json()["error"]["code"] == "SIGN_UP_REQUIRED"
     assert guest.post("/api/episodes", json={"documentId": doc_id}).json()["error"]["code"] == "SIGN_UP_REQUIRED"
     assert guest.get("/api/projects").json()["error"]["code"] == "SIGN_UP_REQUIRED"
+    assert guest.get("/api/library").json()["error"]["code"] == "SIGN_UP_REQUIRED"
+    assert guest.get("/api/insights").status_code == 403
     assert guest.post("/api/defense/questions", json={"documentId": doc_id}).status_code == 403
 
     # Guests can't log in with a password, and the guest's email is never usable.

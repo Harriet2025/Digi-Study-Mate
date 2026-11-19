@@ -59,10 +59,10 @@ app.add_middleware(
 app.include_router(auth.router)
 
 # Everything else needs a signed-in user, and only ever sees that user's data (see auth/scoping.py).
-# Guests (free trial) can upload once and study it; audio, projects and defence practice need an account.
-for module in (documents, guides, flashcards, study, media):
+# Guests (free trial) can upload once and study it; the library, progress, audio, projects and defence practice need an account.
+for module in (documents, guides, flashcards, media):
     app.include_router(module.router, dependencies=[Depends(require_user)])
-for module in (episodes, projects, ask, defense):
+for module in (study, episodes, projects, ask, defense):
     app.include_router(module.router, dependencies=[Depends(require_user), Depends(members_only)])
 
 

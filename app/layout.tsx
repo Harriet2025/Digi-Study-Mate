@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import SmoothScroll from "@/components/motion/SmoothScroll";
 import RegisterServiceWorker from "@/components/pwa/RegisterServiceWorker";
 import SiteFooter from "@/components/site/SiteFooter";
 import SiteHeader from "@/components/site/SiteHeader";
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="flex-1">{children}</div>
         <SiteFooter />
         <RegisterServiceWorker />
+        <SmoothScroll />
       </body>
     </html>
   );

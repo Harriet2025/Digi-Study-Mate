@@ -7,7 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Study Mate",
     description: "Turn lecture slides into lessons, flashcards, quizzes and presentation practice.",
     id: "/",
-    start_url: "/library",
+    start_url: "/",
     scope: "/",
     display: "standalone",
     orientation: "any",

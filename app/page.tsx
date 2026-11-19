@@ -20,6 +20,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { Float, Reveal } from "@/components/home/Motion";
+import { DrawLine } from "@/components/motion/Gsap";
 import Typewriter from "@/components/home/Typewriter";
 import YouTubeLogo from "@/components/brand/YouTubeLogo";
 
@@ -232,6 +233,7 @@ function Grounded() {
           <p className="text-center font-display text-2xl font-bold tracking-tight text-balance sm:text-3xl">
             Every answer cites your own slides, page by page.
           </p>
+          <DrawLine className="mx-auto mt-2 h-3 w-48 text-brand/30 sm:w-72" />
         </Reveal>
         <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
           {points.map((p) => (

@@ -1,3 +1,4 @@
+import MembersOnly from "@/components/auth/MembersOnly";
 import PracticeSession from "@/components/practice/PracticeSession";
 import { Page } from "@/components/ui";
 
@@ -13,8 +14,10 @@ export default async function PracticeSetPage({
   const { setId } = await params;
   const { q } = await searchParams;
   return (
-    <Page>
-      <PracticeSession setId={setId} initialQuestionId={typeof q === "string" ? q : undefined} />
-    </Page>
+    <MembersOnly>
+      <Page>
+        <PracticeSession setId={setId} initialQuestionId={typeof q === "string" ? q : undefined} />
+      </Page>
+    </MembersOnly>
   );
 }

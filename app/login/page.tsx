@@ -3,11 +3,11 @@ import AuthLayout from "@/components/auth/AuthLayout";
 
 export const metadata = { title: "Log in · Study Mate" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
-  const { next, error } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string; reason?: string }> }) {
+  const { next, error, reason } = await searchParams;
   return (
     <AuthLayout>
-      <AuthForm mode="login" next={next} error={error} />
+      <AuthForm mode="login" next={next} error={error} reason={reason} />
     </AuthLayout>
   );
 }

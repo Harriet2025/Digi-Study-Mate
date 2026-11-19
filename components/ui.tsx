@@ -121,7 +121,7 @@ export function ErrorNote({ children, onRetry }: { children: ReactNode; onRetry?
 export function EmptyState({ icon, title, children, action }: { icon?: ReactNode; title: string; children?: ReactNode; action?: ReactNode }) {
   return (
     <div className="rounded-2xl border border-dashed border-line bg-muted/40 px-6 py-14 text-center">
-      {icon && <div className=" ">{icon}</div>}
+      {icon && <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-brand-soft text-brand-deep">{icon}</div>}
       <h2 className="font-display text-2xl font-semibold">{title}</h2>
       {children && <p className="mx-auto mt-2 max-w-md text-subtle">{children}</p>}
       {action && <div className="mt-6 flex justify-center">{action}</div>}

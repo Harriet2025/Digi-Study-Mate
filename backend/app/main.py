@@ -10,7 +10,8 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from .auth.deps import require_user
+from .auth.deps import members_only, require_user
+from .auth.service import delete_old_guests
 from .config import get_settings
 from .db import get_engine
 from .episodes.service import fail_interrupted_jobs
@@ -38,6 +39,9 @@ async def lifespan(_: FastAPI):
             failed = fail_interrupted_jobs(db) + fail_interrupted_guides(db) + fail_interrupted_projects(db)
             if failed:
                 logger.warning("Marked %d interrupted lesson(s) as failed", failed)
+            removed = delete_old_guests(db)
+            if removed:
+                logger.info("Removed %d expired guest trial(s)", removed)
     except SQLAlchemyError as err:
         logger.error("Database not ready at startup: %s", err)
     yield
@@ -55,8 +59,11 @@ app.add_middleware(
 app.include_router(auth.router)
 
 # Everything else needs a signed-in user, and only ever sees that user's data (see auth/scoping.py).
-for module in (documents, episodes, guides, projects, ask, defense, flashcards, study, media):
+# Guests (free trial) can upload once and study it; audio, projects and defence practice need an account.
+for module in (documents, guides, flashcards, study, media):
     app.include_router(module.router, dependencies=[Depends(require_user)])
+for module in (episodes, projects, ask, defense):
+    app.include_router(module.router, dependencies=[Depends(require_user), Depends(members_only)])
 
 
 def _error(status: int, code: str, message: str) -> JSONResponse:

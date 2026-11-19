@@ -66,12 +66,24 @@ class User(TimestampMixin, Base):
     #: Google's stable account ID ("sub"), when the user has signed in with Google.
     google_sub: Mapped[str | None] = mapped_column(String(64), unique=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500))
+    #: A trial account made when someone uploads before signing up. Signing up turns it into a full account.
+    is_guest: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
 
 
 class UserSession(TimestampMixin, Base):
     """A signed-in browser. The cookie holds a random token; only its SHA-256 is stored."""
 
     __tablename__ = "user_sessions"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class PasswordReset(TimestampMixin, Base):
+    """A one-time "forgot password" link. The email holds a random token; only its SHA-256 is stored."""
+
+    __tablename__ = "password_resets"
 
     token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

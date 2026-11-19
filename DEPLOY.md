@@ -49,6 +49,17 @@ Every push to `main` redeploys both sites automatically.
 
 While the consent screen is in **Testing** mode, only the Google accounts you add as test users can sign in. Click **Publish app** to open it to everyone.
 
+## 4. "Forgot password?" emails (Gmail)
+
+1. Turn on **2-Step Verification** for the Gmail account that will send the emails: <https://myaccount.google.com/security>.
+2. Create an **app password** at <https://myaccount.google.com/apppasswords>. Name it "Study Mate" and copy the 16-character password.
+3. Add these variables, in Railway for the live site and in `.env.local` on your laptop:
+   - `SMTP_USER`: that Gmail address
+   - `SMTP_PASSWORD`: the app password, without spaces
+4. Restart the backend.
+
+Until these are set, reset emails aren't sent. On your laptop only, the reset link is printed in the backend's log instead.
+
 ## Notes
 
 - The **first account** created takes over any lessons made before accounts existed.

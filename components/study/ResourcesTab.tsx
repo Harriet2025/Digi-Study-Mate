@@ -1,5 +1,7 @@
 "use client";
 
+import { BookOpen } from "lucide-react";
+import YouTubeLogo from "@/components/brand/YouTubeLogo";
 import type { GuideDetail, GuideResource } from "@/lib/api";
 import { EmptyState, Icons } from "@/components/ui";
 
@@ -60,11 +62,9 @@ function ResourceCard({ resource: r }: { resource: GuideResource }) {
       ) : (
         <div className={`grid aspect-[16/7] place-items-center ${isVideo ? "bg-ink text-canvas" : "bg-muted text-brand-deep"}`}>
           {isVideo ? (
-            <span className="">{Icons.play}</span>
+            <YouTubeLogo className="h-12 transition group-hover:scale-110" />
           ) : (
-            <span className="font-display text-4xl" aria-hidden="true">
-              📚
-            </span>
+            <BookOpen className="size-9" strokeWidth={1.6} aria-hidden="true" />
           )}
         </div>
       )}

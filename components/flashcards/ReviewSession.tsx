@@ -163,7 +163,7 @@ export default function ReviewSession({
         <div className="rounded-2xl bg-ink px-6 py-12 text-center text-canvas">
           <p className="text-xs font-semibold tracking-[0.18em] text-brand-soft uppercase">Session complete</p>
           <p className="mt-2 font-display text-4xl font-semibold">{reviewed} cards reviewed</p>
-          <div className=" ">
+          <div className="mx-auto mt-8 grid max-w-md grid-cols-4 gap-2">
             {RATING_BUTTONS.map((b) => (
               <div key={b.rating} className="rounded-2xl bg-canvas/10 px-2 py-3">
                 <p className="font-display text-2xl font-semibold">{tally[b.rating]}</p>
@@ -229,7 +229,7 @@ export default function ReviewSession({
         ) : (
           <div>
             <p className="mb-3 text-center text-sm text-subtle">How well did you know it?</p>
-            <div className=" ">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {RATING_BUTTONS.map((b) => (
                 <button
                   key={b.rating}

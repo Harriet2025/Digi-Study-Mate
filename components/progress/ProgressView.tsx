@@ -46,7 +46,7 @@ export default function ProgressView() {
         </div>
 
         {/* Totals */}
-        <div className=" ">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <Stat label="Minutes listened" value={totals.listenMinutes} />
           <Stat label="Lessons" value={totals.lessons} />
           <Stat label="Documents" value={totals.documents} />
@@ -164,7 +164,7 @@ function Heatmap({ calendar }: { calendar: Insights["calendar"] }) {
   return (
     <div className="mt-6 overflow-x-auto pb-1">
       <div className="flex gap-1.5">
-        <div className=" " aria-hidden="true">
+        <div className="mr-1 grid grid-rows-7 gap-1.5 text-[10px] text-subtle" aria-hidden="true">
           {["Mon", "", "Wed", "", "Fri", "", "Sun"].map((d, i) => (
             <span key={i} className="flex h-4 items-center">
               {d}
@@ -172,7 +172,7 @@ function Heatmap({ calendar }: { calendar: Insights["calendar"] }) {
           ))}
         </div>
         {weeks.map((week, w) => (
-          <div key={w} className="">
+          <div key={w} className="grid grid-rows-7 gap-1.5">
             {week.map((day, d) =>
               day ? (
                 <span

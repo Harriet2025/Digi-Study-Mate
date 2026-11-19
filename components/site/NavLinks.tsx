@@ -1,6 +1,7 @@
 "use client";
 
-import { Layers, Library, type LucideIcon, Mic, Presentation, TrendingUp } from "lucide-react";
+import { BadgeCheck, Layers, Library, ListChecks, type LucideIcon, Mic, PlayCircle, Presentation, Sparkles, TrendingUp } from "lucide-react";
+import { useCurrentUser } from "@/components/auth/useCurrentUser";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,15 +13,30 @@ export const APP_NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/progress", label: "Progress", icon: TrendingUp },
 ];
 
+/** For visitors who aren't signed in: explain the product instead of linking to locked screens. */
+export const SITE_NAV: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: "/#how-it-works", label: "How it works", icon: ListChecks },
+  { href: "/#features", label: "Features", icon: Sparkles },
+  { href: "/#pricing", label: "Pricing", icon: BadgeCheck },
+  { href: "/listen/demo", label: "Demo", icon: PlayCircle },
+];
+
+/** The app menu for anyone with a session (including free-trial guests); the site menu otherwise. */
+export function useNavItems() {
+  const user = useCurrentUser();
+  return { user, items: user === undefined ? [] : user ? APP_NAV : SITE_NAV };
+}
+
 export function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export default function NavLinks() {
   const pathname = usePathname();
+  const { items } = useNavItems();
   return (
     <nav aria-label="Main" className="hidden items-center gap-1 text-sm font-medium lg:flex">
-      {APP_NAV.map((item) => {
+      {items.map((item) => {
         const active = isActive(pathname, item.href);
         return (
           <Link

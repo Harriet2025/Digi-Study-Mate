@@ -54,6 +54,20 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     session_days: int = Field(default=30, ge=1, le=365)
 
+    # --- Email (password reset) ------------------------------------------------
+    #: Gmail: smtp.gmail.com / 587, SMTP_USER = your Gmail address, SMTP_PASSWORD = a Google "app password".
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    #: The sender shown in the inbox; defaults to "Study Mate <SMTP_USER>".
+    email_from: str = ""
+
+    # --- Guest trial ------------------------------------------------------------
+    #: Pages a guest's first lesson covers (keeps the free trial quick and cheap).
+    guest_max_pages: int = Field(default=15, ge=1, le=100)
+    guest_days: int = Field(default=7, ge=1, le=90)
+
     # --- Files & web ---------------------------------------------------------
     media_dir: Path = BACKEND_DIR / "media"
     cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]

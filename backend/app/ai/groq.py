@@ -107,6 +107,13 @@ def _fitted_budget(input_chars: int, wanted: int) -> int | None:
     return min(wanted, available) if available >= MIN_COMPLETION_TOKENS else None
 
 
+#: Added to every system prompt so English output uses one consistent spelling.
+SPELLING_NOTE = (
+    "\n\nWhen you write in English, use British spelling throughout "
+    "(e.g. organise, colour, defence, analyse; 'practice' as a noun and 'practise' as a verb)."
+)
+
+
 def _chat(system: str, user: str, *, max_tokens: int, effort: str, response_format: dict | None = None) -> str:
     body: dict[str, Any] = {
         "model": get_settings().groq_model,
@@ -141,13 +148,13 @@ Effort = Literal["low", "medium", "high"]
 
 def groq_text(system: str, user: str, *, max_tokens: int = 4_000, effort: Effort = "medium") -> str:
     """Plain-text completion."""
-    return _chat(system, user, max_tokens=max_tokens, effort=effort).strip()
+    return _chat(system + SPELLING_NOTE, user, max_tokens=max_tokens, effort=effort).strip()
 
 
 def groq_json(system: str, user: str, model: type[M], *, name: str, max_tokens: int = 16_000, effort: Effort = "medium") -> M:
     """Completion constrained to a Pydantic model via Groq strict structured outputs, then validated."""
     content = _chat(
-        system,
+        system + SPELLING_NOTE,
         user,
         max_tokens=max_tokens,
         effort=effort,

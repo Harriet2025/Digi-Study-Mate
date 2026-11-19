@@ -50,7 +50,7 @@ export default function PracticeSession({ setId, initialQuestionId }: { setId: s
       </Link>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">Defense practice</p>
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">Defence practice</p>
           <h1 className="mt-1 font-display text-4xl font-semibold text-balance">{set.title ?? "Practice set"}</h1>
         </div>
         <p className="text-sm text-subtle">
@@ -337,7 +337,7 @@ function ScoreRing({ score }: { score: number }) {
   const circumference = 2 * Math.PI * 42;
   const color = score >= 65 ? "var(--color-success)" : "var(--color-brand)";
   return (
-    <div className=" ">
+    <div className="relative grid size-28 shrink-0 place-items-center">
       <svg viewBox="0 0 100 100" className="absolute inset-0 -rotate-90" aria-hidden="true">
         <circle cx="50" cy="50" r="42" fill="none" stroke="var(--color-line)" strokeWidth="9" />
         <circle

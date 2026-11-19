@@ -1,5 +1,6 @@
 "use client";
 
+import { BookOpenText, Gift, Layers, type LucideIcon, MessageCircleQuestion, Network, PlayCircle, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -16,6 +17,7 @@ import {
   type UploadedDocument,
 } from "@/lib/api";
 import { Button, Card, ChoiceGroup, ErrorNote, Icons, LoadingBlock, ProgressBar, Spinner } from "@/components/ui";
+import { ensureSession } from "@/lib/auth";
 
 const MAX_BYTES = 25 * 1024 * 1024;
 /** Groq's free tier handles roughly 10 pages per request. */
@@ -35,6 +37,7 @@ export default function UploadFlow({ initialDocumentId }: { initialDocumentId?: 
   const [error, setError] = useState<string | null>(null);
   const [uploadFraction, setUploadFraction] = useState(0);
   const [fileName, setFileName] = useState("");
+  const [isGuest, setIsGuest] = useState(false);
 
   // Coming from the library with an existing document.
   useEffect(() => {
@@ -63,11 +66,14 @@ export default function UploadFlow({ initialDocumentId }: { initialDocumentId?: 
     setUploadFraction(0);
     setStep("uploading");
     try {
+      // No account yet? Start a free trial so they can see their lesson before signing up.
+      const me = await ensureSession();
+      setIsGuest(me.isGuest);
       const uploaded = await uploadDocument(file, setUploadFraction);
       setDoc(uploaded);
       setStep("configure");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "The upload failed. Please try again.");
+      setError(err instanceof Error ? err.message : "The upload failed. Please try again.");
       setStep("pick");
     }
   };
@@ -82,6 +88,7 @@ export default function UploadFlow({ initialDocumentId }: { initialDocumentId?: 
         (doc ? (
           <LessonForm
             doc={doc}
+            isGuest={isGuest}
             onChangeFile={() => {
               setDoc(null);
               setStep("pick");
@@ -140,7 +147,7 @@ function DropZone({ onFile }: { onFile: (file: File) => void }) {
         dragging ? "border-brand bg-brand-soft/40" : "border-line bg-muted/40 hover:border-brand/50"
       }`}
     >
-      <div className="">{Icons.upload}</div>
+      <div className="grid size-16 place-items-center rounded-2xl bg-brand text-white shadow-md shadow-brand/25">{Icons.upload}</div>
       <h2 className="mt-5 font-display text-2xl font-semibold">Drop your slides or notes here</h2>
       <p className="mt-2 text-subtle">PDF or PowerPoint (.pptx), up to 25 MB</p>
       <Button className="mt-6" onClick={() => inputRef.current?.click()}>
@@ -179,7 +186,7 @@ function UploadingCard({ fileName, fraction }: { fileName: string; fraction: num
   );
 }
 
-function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile: () => void }) {
+function LessonForm({ doc, isGuest, onChangeFile }: { doc: UploadedDocument; isGuest: boolean; onChangeFile: () => void }) {
   const router = useRouter();
   const unit = doc.sourceType === "pptx" ? "slide" : "page";
   const [title, setTitle] = useState(doc.filename.replace(/\.(pdf|pptx)$/i, ""));
@@ -236,7 +243,7 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
   return (
     <form onSubmit={submit} className="space-y-6">
       <Card className="flex items-center gap-4">
-        <span className="">
+        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-sm font-bold text-brand-deep uppercase">
           {doc.sourceType}
         </span>
         <div className="min-w-0 flex-1">
@@ -308,26 +315,39 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
         <p className="text-sm font-semibold">You&apos;ll get</p>
         <ul className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
           {[
-            ["📖", "A step-by-step lesson in simple language"],
-            ["🧭", "Diagrams, analogies and worked examples"],
-            ["💬", "A tutor to answer your questions"],
-            ["🗂️", "Flashcards with spaced repetition"],
-            ["✅", "A final quiz that rates you"],
-            ["🎬", "Videos and reading to go further"],
-          ].map(([icon, text]) => (
-            <li key={text} className="flex gap-2">
-              <span aria-hidden="true">{icon}</span>
-              {text}
-            </li>
-          ))}
+            [BookOpenText, "A step-by-step lesson in simple language"],
+            [Network, "Diagrams, analogies and worked examples"],
+            [MessageCircleQuestion, "A tutor to answer your questions"],
+            [Layers, "Flashcards with spaced repetition"],
+            [Trophy, "A final quiz that rates you"],
+            [PlayCircle, "Videos and reading to go further"],
+          ].map(([Icon, text]) => {
+            const I = Icon as LucideIcon;
+            return (
+              <li key={text as string} className="flex items-center gap-2">
+                <I className="size-4 shrink-0 text-brand" aria-hidden="true" />
+                {text as string}
+              </li>
+            );
+          })}
         </ul>
-        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-canvas px-4 py-3">
+        {isGuest ? (
+          <p className="flex items-start gap-3 rounded-2xl border border-line bg-canvas px-4 py-3 text-sm text-subtle">
+            <Gift className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
+            <span>
+              <span className="font-semibold text-ink">Free trial:</span> your first lesson covers up to 15 {unit}s. Create a free
+              account afterwards to keep it and unlock audio lessons, projects and defence practice.
+            </span>
+          </p>
+        ) : (
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-line bg-canvas px-4 py-3">
           <input type="checkbox" checked={withAudio} onChange={(e) => setWithAudio(e.target.checked)} className="mt-1 size-4 accent-brand" />
           <span>
             <span className="block font-semibold">Also make an audio version with Alex &amp; Sam</span>
             <span className="block text-sm text-subtle">A podcast-style lesson for listening on the go. Uses ElevenLabs voice credit.</span>
           </span>
         </label>
+        )}
         {withAudio && (
           <div className="space-y-5">
             <ChoiceGroup label="Audio length" value={minutes} onChange={setMinutes} options={LENGTHS} />
@@ -340,13 +360,14 @@ function LessonForm({ doc, onChangeFile }: { doc: UploadedDocument; onChangeFile
 
       <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link
+          hidden={isGuest}
           href={`/practice?documentId=${doc.documentId}&pageStart=${pageStart}&pageEnd=${pageEnd}`}
           className="text-center text-sm font-medium text-brand-deep underline-offset-4 hover:underline"
         >
-          Practise defense questions on these {unit}s instead
+          Practise defence questions on these {unit}s instead
         </Link>
         <Button type="submit" disabled={submitting || !rangeValid} className="px-7 py-3 text-base">
-          {submitting ? <Spinner className="size-4" /> : <span aria-hidden="true">✨</span>}
+          {submitting ? <Spinner className="size-4" /> : <Sparkles className="size-4" aria-hidden="true" />}
           {submitting ? "Starting…" : "Create my study space"}
         </Button>
       </div>

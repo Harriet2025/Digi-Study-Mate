@@ -8,8 +8,8 @@ export default function ProjectsPage() {
     <Page>
       <PageHeader
         eyebrow="Projects & presentations"
-        title="From assignment brief to confident defense"
-        description="Upload your presentation requirements. We'll design the PowerPoint, write what to say on every slide, and coach you on the questions your lecturer is likely to ask."
+        title="Prepare to present with confidence"
+        description="Upload your presentation brief to get a draft slide structure to build on, speaking notes to adapt, and practice with the questions your lecturer is likely to ask. The work and the ideas stay yours."
       />
       <div className="mt-10">
         <ProjectsHome />

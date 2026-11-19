@@ -118,3 +118,74 @@ def test_google_sign_in(client, monkeypatch):
 def test_google_disabled_by_default(client):
     assert _anon().get("/api/auth/providers").json() == {"google": False}
     assert _anon().get("/api/auth/google", follow_redirects=False).status_code == 404
+
+
+def _pdf() -> bytes:
+    from .conftest import FIXTURES
+
+    return (FIXTURES / "sample.pdf").read_bytes()
+
+
+def test_guest_trial_then_sign_up_keeps_the_work(client):
+    guest = _anon()
+    r = guest.post("/api/auth/guest")
+    assert r.status_code == 200 and r.json()["user"]["isGuest"] is True
+    assert guest.post("/api/auth/guest").json()["user"]["id"] == r.json()["user"]["id"]  # idempotent
+
+    doc = guest.post("/api/upload", files={"file": ("sample.pdf", _pdf(), "application/pdf")})
+    assert doc.status_code == 201
+    doc_id = doc.json()["documentId"]
+    # One upload only, and no audio, projects or defence practice on a trial.
+    second = guest.post("/api/upload", files={"file": ("sample.pdf", _pdf(), "application/pdf")})
+    assert second.status_code == 403 and second.json()["error"]["code"] == "SIGN_UP_REQUIRED"
+    assert guest.post("/api/episodes", json={"documentId": doc_id}).json()["error"]["code"] == "SIGN_UP_REQUIRED"
+    assert guest.get("/api/projects").json()["error"]["code"] == "SIGN_UP_REQUIRED"
+    assert guest.post("/api/defense/questions", json={"documentId": doc_id}).status_code == 403
+
+    # Guests can't log in with a password, and the guest's email is never usable.
+    r = guest.post("/api/auth/signup", json={"name": "Yaa", "email": "yaa@example.com", "password": "longenough"})
+    assert r.status_code == 201
+    me = r.json()["user"]
+    assert me["isGuest"] is False and me["email"] == "yaa@example.com"
+    assert any(d["documentId"] == doc_id for d in guest.get("/api/documents").json())
+    assert guest.get("/api/projects").status_code == 200  # full account now
+
+
+def test_guest_who_logs_in_merges_into_existing_account(client):
+    owner = _anon()
+    owner.post("/api/auth/signup", json={"name": "Esi", "email": "esi@example.com", "password": "longenough"})
+
+    guest = _anon()
+    guest.post("/api/auth/guest")
+    doc_id = guest.post("/api/upload", files={"file": ("sample.pdf", _pdf(), "application/pdf")}).json()["documentId"]
+    r = guest.post("/api/auth/login", json={"email": "esi@example.com", "password": "longenough"})
+    assert r.status_code == 200 and r.json()["user"]["email"] == "esi@example.com"
+    assert any(d["documentId"] == doc_id for d in owner.get("/api/documents").json())
+
+
+def test_forgot_and_reset_password(client, monkeypatch):
+    from app.routers import auth as auth_router
+
+    sent: list[tuple[str, str]] = []
+    monkeypatch.setattr(auth_router, "send_password_reset", lambda to, name, link: sent.append((to, link)))
+
+    c = _anon()
+    c.post("/api/auth/signup", json={"name": "Kwame", "email": "kwame@example.com", "password": "old-password"})
+    other_device = _anon()
+    other_device.post("/api/auth/login", json={"email": "kwame@example.com", "password": "old-password"})
+
+    # Same answer whether or not the account exists; only real accounts get an email.
+    assert _anon().post("/api/auth/forgot", json={"email": "nobody@example.com"}).json() == {"ok": True}
+    assert _anon().post("/api/auth/forgot", json={"email": "Kwame@example.com"}).json() == {"ok": True}
+    assert len(sent) == 1 and sent[0][0] == "kwame@example.com"
+    token = parse_qs(urlparse(sent[0][1]).query)["token"][0]
+    assert sent[0][1].startswith("http://localhost:3000/reset-password?token=")
+
+    assert _anon().post("/api/auth/reset", json={"token": token, "password": "short"}).status_code == 400
+    r = _anon().post("/api/auth/reset", json={"token": token, "password": "brand-new-password"})
+    assert r.status_code == 200
+    # The link works once, the old password stops working, and other devices are signed out.
+    assert _anon().post("/api/auth/reset", json={"token": token, "password": "another-one"}).json()["error"]["code"] == "RESET_EXPIRED"
+    assert _anon().post("/api/auth/login", json={"email": "kwame@example.com", "password": "old-password"}).status_code == 401
+    assert _anon().post("/api/auth/login", json={"email": "kwame@example.com", "password": "brand-new-password"}).status_code == 200
+    assert other_device.get("/api/library").status_code == 401

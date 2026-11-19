@@ -292,3 +292,21 @@ def test_users_only_see_their_own_data(client, make_client):
     assert client.get(f"/api/documents/{doc_id}").status_code == 200
     assert client.get(f"/api/projects/{project_id}").status_code == 200
     assert any(c["id"] == card["id"] for c in client.get(f"/api/flashcards?guideId={guide_id}&due=false").json()["cards"])
+
+
+def test_guest_trial_study_space_is_limited(make_client):
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    guest = TestClient(app)
+    guest.post("/api/auth/guest")
+    doc_id = _upload(guest)
+    r = guest.post("/api/guides", json={"documentId": doc_id, "pageStart": 1, "pageEnd": 50})
+    assert r.status_code == 202
+    g = guest.get(f"/api/guides/{r.json()['guideId']}").json()
+    assert g["status"] == "ready"
+    assert guest.post("/api/guides", json={"documentId": doc_id}).json()["error"]["code"] == "SIGN_UP_REQUIRED"
+    for i in range(3):
+        assert guest.post(f"/api/guides/{g['guideId']}/chat", json={"message": f"q{i}"}).status_code == 200
+    assert guest.post(f"/api/guides/{g['guideId']}/chat", json={"message": "q4"}).status_code == 403

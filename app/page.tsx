@@ -1,6 +1,7 @@
 import {
   ArrowRight,
   BookOpenText,
+  Check,
   FileText,
   GraduationCap,
   Headphones,
@@ -12,14 +13,15 @@ import {
   Play,
   Presentation,
   ShieldCheck,
-  Sparkles,
   Trophy,
   Upload,
   Youtube,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { Float, Reveal } from "@/components/home/Motion";
 import Typewriter from "@/components/home/Typewriter";
+import YouTubeLogo from "@/components/brand/YouTubeLogo";
 
 // ---------------------------------------------------------------------------
 // Building blocks
@@ -46,7 +48,7 @@ function IconTile({ icon: Icon, dark = false, className = "" }: { icon: LucideIc
 function Chip({ icon: Icon, title, detail }: { icon: LucideIcon; title: string; detail: string }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-line bg-canvas px-3.5 py-2.5 shadow-lg shadow-ink/5">
-      <span className="" aria-hidden="true">
+      <span className="grid size-9 place-items-center rounded-lg bg-brand-soft text-brand" aria-hidden="true">
         <Icon className="size-4.5" strokeWidth={2} />
       </span>
       <span className="leading-tight">
@@ -76,11 +78,7 @@ function Hero() {
 
       <div className="relative mx-auto grid grid-cols-1 max-w-6xl items-center gap-12 px-4 pt-12 pb-16 sm:px-6 md:pt-16 lg:grid-cols-[1.1fr_1fr] lg:gap-10 lg:pt-20 lg:pb-24">
         <div className="text-center lg:text-left">
-          <span className="inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-3 py-1 text-xs font-medium text-subtle">
-            <Sparkles className="size-3.5 text-brand" aria-hidden="true" />
-            AI study partner for university
-          </span>
-          <h1 className="mt-6 font-display text-[2.15rem] leading-[1.1] font-bold tracking-tight min-[400px]:text-[2.5rem] sm:text-6xl">
+          <h1 className="font-display text-[2.15rem] leading-[1.1] font-bold tracking-tight min-[400px]:text-[2.5rem] sm:text-6xl">
             Lecture notes,
             <br />
             made <Typewriter className="whitespace-nowrap text-brand" words={["simple.", "visual.", "memorable.", "exam-ready."]} />
@@ -88,16 +86,17 @@ function Hero() {
           <p className="mx-auto mt-5 max-w-md text-lg text-subtle lg:mx-0">Upload your slides. Learn, practise and present with confidence.</p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
             <Link href="/upload" className={`${PRIMARY_BUTTON} w-full sm:w-auto`}>
-              <Upload className="size-4" aria-hidden="true" /> Upload your notes
+              <Upload className="size-4" aria-hidden="true" /> Try it free
             </Link>
             <Link
               href="/listen/demo"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-line bg-canvas px-6 py-3.5 font-medium transition hover:border-ink/30 sm:w-auto"
             >
-              <Play className="size-4 fill-current" aria-hidden="true" /> Try a demo
+              <Play className="size-4 fill-current" aria-hidden="true" /> Hear a demo
             </Link>
           </div>
-          <ul className="mt-8 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-subtle lg:justify-start">
+          <p className="mt-3 text-sm text-subtle">No account needed for your first lesson.</p>
+          <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-subtle lg:justify-start">
             {TRUST.map(({ icon: Icon, label }) => (
               <li key={label} className="flex items-center gap-1.5">
                 <Icon className="size-4 text-brand" aria-hidden="true" /> {label}
@@ -167,37 +166,85 @@ function HeroVisual() {
   );
 }
 
-const FEATURES: { icon: LucideIcon; title: string; body: string }[] = [
-  { icon: BookOpenText, title: "Step-by-step lessons", body: "Plain language, real examples." },
-  { icon: Network, title: "Diagrams", body: "See how ideas connect." },
-  { icon: MessageCircleQuestion, title: "AI tutor", body: "Ask anything, get page citations." },
-  { icon: Layers, title: "Flashcards", body: "Spaced repetition that sticks." },
-  { icon: Trophy, title: "Rated quizzes", body: "Know when you're ready." },
-  { icon: Youtube, title: "Videos & reading", body: "Hand-picked extra help." },
-  { icon: Headphones, title: "Podcast mode", body: "Two hosts explain it aloud." },
-  { icon: Mic, title: "Defense practice", body: "Answer out loud, get graded." },
+const FEATURES: { icon: LucideIcon; title: string; body: string; image: string; alt: string }[] = [
+  { icon: BookOpenText, title: "Step-by-step lessons", body: "Plain language, real examples.", image: "lesson", alt: "A lesson step explaining glycolysis in plain language" },
+  { icon: Network, title: "Diagrams", body: "See how ideas connect.", image: "diagram", alt: "A flowchart generated from lecture notes" },
+  { icon: MessageCircleQuestion, title: "AI tutor", body: "Answers from your own pages.", image: "tutor", alt: "The tutor answering a student's question" },
+  { icon: Layers, title: "Flashcards", body: "Spaced repetition that sticks.", image: "flashcard", alt: "A flashcard question" },
+  { icon: Trophy, title: "Rated quizzes", body: "Know when you're ready.", image: "quiz", alt: "A multiple-choice quiz question" },
+  { icon: Youtube, title: "Videos & reading", body: "Hand-picked YouTube and reading.", image: "resources", alt: "A YouTube video suggestion" },
+  { icon: Headphones, title: "Podcast mode", body: "Two hosts explain it aloud.", image: "podcast", alt: "The audio lesson player with a live transcript" },
+  { icon: Mic, title: "Defence practice", body: "Answer out loud, get graded.", image: "defence", alt: "A tough examiner question" },
 ];
 
 function Features() {
   return (
-    <section id="features" className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-24">
-      <Reveal className="mx-auto max-w-xl text-center">
+    <section id="features" className="py-20 md:py-24">
+      <Reveal className="mx-auto max-w-xl px-4 text-center sm:px-6">
         <Eyebrow>Features</Eyebrow>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Everything you need to study</h2>
+        <p className="mt-3 text-sm text-subtle md:hidden">Swipe to see more</p>
       </Reveal>
-      <ul className=" ">
+      {/* Phones: one swipeable row. Tablets: 2 columns. Desktops: 4 columns. */}
+      <ul className="mx-auto mt-8 flex max-w-6xl snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:none] sm:px-6 md:mt-12 md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-4 [&::-webkit-scrollbar]:hidden">
         {FEATURES.map((f, i) => (
-          <li key={f.title}>
+          <li key={f.title} className="w-[78%] shrink-0 snap-start min-[480px]:w-[58%] md:w-auto">
             <Reveal delay={(i % 4) * 0.06} className="h-full">
-              <div className="group h-full rounded-2xl border border-line bg-canvas p-4 transition hover:-translate-y-1 hover:border-brand/30 hover:shadow-lg hover:shadow-ink/5 sm:p-6">
-                <IconTile icon={f.icon} className="transition group-hover:bg-brand group-hover:text-white" />
-                <h3 className="mt-4 font-display font-semibold sm:text-lg">{f.title}</h3>
-                <p className="mt-1 text-sm text-subtle">{f.body}</p>
-              </div>
+              <figure className="group h-full overflow-hidden rounded-2xl border border-line bg-canvas transition hover:-translate-y-1 hover:border-brand/30 hover:shadow-lg hover:shadow-ink/5">
+                <div className="relative aspect-[16/10] overflow-hidden border-b border-line bg-page">
+                  <Image
+                    src={`/showcase/${f.image}.webp`}
+                    alt={f.alt}
+                    fill
+                    sizes="(min-width: 1024px) 270px, (min-width: 768px) 45vw, 78vw"
+                    className="object-cover object-top transition duration-500 group-hover:scale-[1.03]"
+                  />
+                </div>
+                <figcaption className="flex items-start gap-3 p-4">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-soft text-brand" aria-hidden="true">
+                    {f.icon === Youtube ? <YouTubeLogo className="h-3.5" /> : <f.icon className="size-4" strokeWidth={1.9} />}
+                  </span>
+                  <span>
+                    <span className="block font-display font-semibold">{f.title}</span>
+                    <span className="block text-sm text-subtle">{f.body}</span>
+                  </span>
+                </figcaption>
+              </figure>
             </Reveal>
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/** The strongest trust message, stated plainly near the top. */
+function Grounded() {
+  const points: { icon: LucideIcon; title: string; body: string }[] = [
+    { icon: FileText, title: "Cites your pages", body: "Every answer points to the page or slide it came from." },
+    { icon: ShieldCheck, title: "Sticks to your notes", body: "Your material is the source of truth. Nothing invented." },
+    { icon: GraduationCap, title: "Private to you", body: "Only you can see your uploads, lessons and scores." },
+  ];
+  return (
+    <section className="border-y border-line bg-canvas py-14">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <Reveal>
+          <p className="text-center font-display text-2xl font-bold tracking-tight text-balance sm:text-3xl">
+            Every answer cites your own slides, page by page.
+          </p>
+        </Reveal>
+        <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {points.map((p) => (
+            <li key={p.title} className="flex items-start gap-3">
+              <IconTile icon={p.icon} />
+              <span>
+                <span className="block font-semibold">{p.title}</span>
+                <span className="block text-sm text-subtle">{p.body}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
@@ -210,27 +257,27 @@ const STEPS: { icon: LucideIcon; title: string; body: string }[] = [
 
 function HowItWorks() {
   return (
-    <section id="how-it-works" className="border-y border-line bg-canvas py-20 md:py-24">
+    <section id="how-it-works" className="py-20 md:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <Reveal className="text-center">
           <Eyebrow>How it works</Eyebrow>
           <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Three steps. About a minute.</h2>
         </Reveal>
-        <ol className="relative mt-14 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-6">
-          <span aria-hidden="true" className="absolute top-8 right-[16%] left-[16%] hidden border-t-2 border-dashed border-line md:block" />
+        <ol className="relative mt-10 grid grid-cols-3 gap-3 sm:gap-6 md:mt-14">
+          <span aria-hidden="true" className="absolute top-8 right-[16%] left-[16%] border-t-2 border-dashed border-line" />
           {STEPS.map((step, i) => (
             <li key={step.title}>
               <Reveal delay={i * 0.12} className="relative flex flex-col items-center text-center">
                 <Float distance={5} duration={4 + i} delay={i * 0.4}>
-                  <span className=" ">
+                  <span className="relative grid size-16 place-items-center rounded-2xl bg-brand text-white shadow-lg shadow-brand/25">
                     <step.icon className="size-7" strokeWidth={1.8} aria-hidden="true" />
-                    <span className=" ">
+                    <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full border-2 border-canvas bg-ink text-[11px] font-bold">
                       {i + 1}
                     </span>
                   </span>
                 </Float>
-                <h3 className="mt-5 font-display text-xl font-semibold">{step.title}</h3>
-                <p className="mt-1 text-subtle">{step.body}</p>
+                <h3 className="mt-4 font-display font-semibold sm:mt-5 sm:text-xl">{step.title}</h3>
+                <p className="mt-1 text-xs text-subtle sm:text-base">{step.body}</p>
               </Reveal>
             </li>
           ))}
@@ -241,10 +288,10 @@ function HowItWorks() {
 }
 
 const PROJECT_POINTS: { icon: LucideIcon; label: string }[] = [
-  { icon: Presentation, label: "A designed PowerPoint" },
-  { icon: FileText, label: "A timed presenter script" },
-  { icon: MessageCircleQuestion, label: "Likely questions + answers" },
-  { icon: Mic, label: "Practice with an examiner" },
+  { icon: Presentation, label: "A draft slide structure" },
+  { icon: FileText, label: "Speaking notes to adapt" },
+  { icon: MessageCircleQuestion, label: "Likely lecturer questions" },
+  { icon: Mic, label: "Practise your defence" },
 ];
 
 function Projects() {
@@ -254,8 +301,9 @@ function Projects() {
         <Reveal>
           <Eyebrow dark>Projects &amp; presentations</Eyebrow>
           <h2 className="mt-3 font-display text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-            Upload the brief. Walk in prepared.
+            Get a draft structure. Practise your defence.
           </h2>
+          <p className="mt-4 text-canvas/70">Help to prepare, not to replace your work. The ideas stay yours.</p>
           <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
             {PROJECT_POINTS.map((p) => (
               <li key={p.label} className="flex items-center gap-3 rounded-xl bg-canvas/5 p-3 ring-1 ring-canvas/10">
@@ -295,17 +343,82 @@ function Projects() {
   );
 }
 
+const TIERS: { name: string; price: string; note: string; items: string[]; cta: string; href: string; highlight?: boolean }[] = [
+  {
+    name: "Try it",
+    price: "Free",
+    note: "No account needed",
+    items: ["One lesson from up to 15 pages", "Flashcards, quiz and resources", "3 questions to the tutor"],
+    cta: "Try it now",
+    href: "/upload",
+  },
+  {
+    name: "Student",
+    price: "Free during beta",
+    note: "With a free account",
+    items: ["Study spaces for all your courses*", "Audio lessons with Alex & Sam", "Projects and defence practice", "Progress, streaks and weak spots"],
+    cta: "Create a free account",
+    href: "/signup",
+    highlight: true,
+  },
+];
+
+function Pricing() {
+  return (
+    <section id="pricing" className="mx-auto max-w-5xl px-4 py-20 sm:px-6 md:py-24">
+      <Reveal className="text-center">
+        <Eyebrow>Pricing</Eyebrow>
+        <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Free while we&apos;re in beta</h2>
+      </Reveal>
+      <div className="mt-12 grid grid-cols-1 gap-5 md:grid-cols-2">
+        {TIERS.map((t) => (
+          <Reveal key={t.name} className="h-full">
+            <div
+              className={`flex h-full flex-col rounded-2xl border p-6 sm:p-8 ${
+                t.highlight ? "border-brand bg-brand text-white shadow-xl shadow-brand/20" : "border-line bg-canvas"
+              }`}
+            >
+              <p className={`text-sm font-semibold ${t.highlight ? "text-brand-soft" : "text-brand"}`}>{t.name}</p>
+              <p className="mt-2 font-display text-3xl font-bold">{t.price}</p>
+              <p className={`text-sm ${t.highlight ? "text-white/70" : "text-subtle"}`}>{t.note}</p>
+              <ul className="mt-6 flex-1 space-y-3">
+                {t.items.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5">
+                    <Check className={`mt-0.5 size-4 shrink-0 ${t.highlight ? "text-brand-soft" : "text-success"}`} aria-hidden="true" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href={t.href}
+                className={`mt-8 inline-flex items-center justify-center rounded-full px-6 py-3 font-medium transition ${
+                  t.highlight ? "bg-white text-brand hover:bg-brand-soft" : "border border-line hover:border-ink/30"
+                }`}
+              >
+                {t.cta}
+              </Link>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+      <p className="mt-6 text-center text-sm text-subtle">
+        *Fair use while in beta. Paid plans with mobile money may come later, and we&apos;ll tell you before anything changes.
+      </p>
+    </section>
+  );
+}
+
 function FinalCTA() {
   return (
     <section className="px-4 py-20 sm:px-6 md:py-24">
       <Reveal className="mx-auto max-w-3xl text-center">
-        <span className=" " aria-hidden="true">
+        <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-brand-soft text-brand" aria-hidden="true">
           <GraduationCap className="size-7" strokeWidth={1.8} />
         </span>
         <h2 className="mt-6 font-display text-3xl font-bold tracking-tight text-balance sm:text-5xl">Study smarter, starting today.</h2>
-        <p className="mt-4 text-lg text-subtle">Free to start. Your notes stay private.</p>
+        <p className="mt-4 text-lg text-subtle">Upload your slides and see your first lesson in about a minute.</p>
         <Link href="/upload" className={`${PRIMARY_BUTTON} mt-8`}>
-          Get started <ArrowRight className="size-4" aria-hidden="true" />
+          Try it free <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
       </Reveal>
     </section>
@@ -316,9 +429,11 @@ export default function Home() {
   return (
     <main>
       <Hero />
+      <Grounded />
       <Features />
       <HowItWorks />
       <Projects />
+      <Pricing />
       <FinalCTA />
     </main>
   );

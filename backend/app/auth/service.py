@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..errors import AppError
-from ..models import OWNED_MODELS, User, UserSession
+from ..models import OWNED_MODELS, PasswordReset, User, UserSession
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MIN_PASSWORD = 8
@@ -84,12 +84,15 @@ def user_json(user: User) -> dict:
         "avatarUrl": user.avatar_url,
         "hasPassword": bool(user.password_hash),
         "hasGoogle": bool(user.google_sub),
+        "isGuest": user.is_guest,
     }
 
 
 def _create_user(db: Session, **fields) -> User:
     """Creates the user. The very first account also takes over data made before accounts existed."""
-    is_first = (db.scalar(select(func.count(User.id))) or 0) == 0
+    is_first = not fields.get("is_guest") and (
+        db.scalar(select(func.count(User.id)).where(User.is_guest.is_(False))) or 0
+    ) == 0
     user = User(**fields)
     db.add(user)
     try:
@@ -104,24 +107,60 @@ def _create_user(db: Session, **fields) -> User:
     return user
 
 
-def register(db: Session, *, name: str, email: str, password: str) -> User:
+def _check_password(password: str) -> None:
+    if len(password) < MIN_PASSWORD:
+        raise AppError("WEAK_PASSWORD", 400, f"Use at least {MIN_PASSWORD} characters for your password.")
+
+
+def register(db: Session, *, name: str, email: str, password: str, guest: User | None = None) -> User:
+    """Creates an account. If a guest is signing up, their trial account becomes the real one (keeping their work)."""
     email = normalize_email(email)
     name = name.strip()
     if not name:
         raise AppError("INVALID_NAME", 400, "Enter your name.")
-    if len(password) < MIN_PASSWORD:
-        raise AppError("WEAK_PASSWORD", 400, f"Use at least {MIN_PASSWORD} characters for your password.")
+    _check_password(password)
     if db.scalar(select(User).where(User.email == email)):
         raise AppError("EMAIL_TAKEN", 409, "An account with that email already exists. Log in instead.")
+    if guest is not None and guest.is_guest:
+        guest = db.merge(guest)
+        guest.name, guest.email, guest.password_hash, guest.is_guest = name[:120], email, hash_password(password), False
+        db.commit()
+        return guest
     user = _create_user(db, name=name[:120], email=email, password_hash=hash_password(password))
     db.commit()
     return user
 
 
+# --- Guests (try before signing up) -----------------------------------------
+def create_guest(db: Session) -> User:
+    user = _create_user(db, name="Guest", email=f"guest-{secrets.token_hex(12)}@guest.invalid", is_guest=True)
+    db.commit()
+    return user
+
+
+def merge_guest(db: Session, guest: User | None, into: User) -> None:
+    """Moves a guest's uploads and lessons into the account they just logged in to, then removes the guest."""
+    if guest is None or not guest.is_guest or guest.id == into.id:
+        return
+    conn = db.connection()
+    for model in OWNED_MODELS:
+        conn.execute(text(f"UPDATE {model.__tablename__} SET user_id = :to WHERE user_id = :guest"), {"to": into.id, "guest": guest.id})
+    db.execute(delete(User).where(User.id == guest.id))
+    db.commit()
+
+
+def delete_old_guests(db: Session) -> int:
+    """Guest trials that were never turned into accounts are removed (with their data) after a week."""
+    cutoff = _utcnow() - timedelta(days=get_settings().guest_days)
+    result = db.execute(delete(User).where(User.is_guest.is_(True), User.created_at < cutoff))
+    db.commit()
+    return result.rowcount or 0
+
+
 def authenticate(db: Session, *, email: str, password: str) -> User:
     email = email.strip().lower()
     _check_attempts(email)
-    user = db.scalar(select(User).where(User.email == email))
+    user = db.scalar(select(User).where(User.email == email, User.is_guest.is_(False)))
     if user is None or not user.password_hash:
         verify_password(password, _DUMMY_HASH)
         _record_failure(email)
@@ -179,3 +218,36 @@ def user_for_token(db: Session, token: str) -> User | None:
 def end_session(db: Session, token: str) -> None:
     db.execute(delete(UserSession).where(UserSession.token_hash == _token_hash(token)))
     db.commit()
+
+
+# --- Forgot password ---------------------------------------------------------
+RESET_MINUTES = 60
+
+
+def start_password_reset(db: Session, email: str) -> tuple[User, str] | None:
+    """Returns (user, token) when the email belongs to an account; None otherwise (the caller says the same either way)."""
+    email = email.strip().lower()
+    _check_attempts(f"reset:{email}")
+    _record_failure(f"reset:{email}")  # counts requests, so one address can't be flooded with emails
+    user = db.scalar(select(User).where(User.email == email, User.is_guest.is_(False)))
+    if user is None:
+        return None
+    token = secrets.token_urlsafe(32)
+    db.execute(delete(PasswordReset).where(PasswordReset.user_id == user.id))
+    db.add(PasswordReset(token_hash=_token_hash(token), user_id=user.id, expires_at=_utcnow() + timedelta(minutes=RESET_MINUTES)))
+    db.commit()
+    return user, token
+
+
+def finish_password_reset(db: Session, token: str, password: str) -> User:
+    _check_password(password)
+    reset = db.get(PasswordReset, _token_hash(token))
+    if reset is None or reset.expires_at < _utcnow():
+        raise AppError("RESET_EXPIRED", 400, "This reset link has expired or was already used. Request a new one.")
+    user = db.get(User, reset.user_id)
+    user.password_hash = hash_password(password)
+    db.delete(reset)
+    # Sign out everywhere else: whoever knew the old password loses access.
+    db.execute(delete(UserSession).where(UserSession.user_id == user.id))
+    db.commit()
+    return user

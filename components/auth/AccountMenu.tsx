@@ -51,14 +51,15 @@ export default function AccountMenu() {
 
   if (user === undefined) return <span className="hidden h-9 w-40 sm:block" aria-hidden="true" />;
 
-  if (user === null) {
+  if (user === null || user.isGuest) {
+    // Guests keep their trial work when they sign up, so the button says so.
     return (
       <div className="hidden items-center gap-1 sm:flex">
         <Link href="/login" className="rounded-full px-4 py-2 text-sm font-medium text-ink hover:bg-muted">
           Log in
         </Link>
-        <Link href="/signup" className={`inline-flex ${PRIMARY}`}>
-          Sign up free
+        <Link href={user?.isGuest ? "/signup?reason=trial" : "/signup"} className={`inline-flex ${PRIMARY}`}>
+          {user?.isGuest ? "Save my lesson" : "Sign up free"}
         </Link>
       </div>
     );

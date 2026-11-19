@@ -57,3 +57,20 @@ def set_session_cookie(response: Response, token: str) -> None:
 
 def clear_session_cookie(response: Response) -> None:
     response.delete_cookie(SESSION_COOKIE, path="/", httponly=True, secure=_secure(), samesite="lax")
+
+
+SIGN_UP_MESSAGE = "Create a free account to use this. Your trial lesson comes with you."
+
+
+async def members_only(request: Request) -> None:
+    """For features a guest trial doesn't include (audio lessons, projects, defence practice)."""
+    user = getattr(request.state, "user", None)
+    if user is not None and user.is_guest:
+        raise AppError("SIGN_UP_REQUIRED", 403, SIGN_UP_MESSAGE)
+
+
+def guest_limit(request: Request, used: int, allowed: int) -> None:
+    """Raises if a guest has already used their trial allowance of something."""
+    user = getattr(request.state, "user", None)
+    if user is not None and user.is_guest and used >= allowed:
+        raise AppError("SIGN_UP_REQUIRED", 403, SIGN_UP_MESSAGE)

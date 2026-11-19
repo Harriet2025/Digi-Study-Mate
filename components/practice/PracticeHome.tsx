@@ -84,7 +84,7 @@ export default function PracticeHome({
 
 export function ScoreBadge({ score }: { score: number | null }) {
   if (score === null) {
-    return <span className="">New</span>;
+    return <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-muted text-xs font-semibold text-subtle">New</span>;
   }
   const tone = score >= 85 ? "bg-success text-white" : score >= 65 ? "bg-success-soft text-success" : score >= 40 ? "bg-brand-soft text-brand-deep" : "bg-brand text-white";
   return <span className={`grid size-14 shrink-0 place-items-center rounded-2xl font-display text-xl font-semibold ${tone}`}>{score}</span>;

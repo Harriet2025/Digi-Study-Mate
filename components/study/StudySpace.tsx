@@ -1,5 +1,7 @@
 "use client";
 
+import { BookOpenText, Headphones, Layers, MessageCircleQuestion, PlayCircle, Sparkles, Trophy } from "lucide-react";
+import { useCurrentUser } from "@/components/auth/useCurrentUser";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, LANGUAGE_OPTIONS, LEVEL_OPTIONS, type GuideDetail } from "@/lib/api";
@@ -12,16 +14,17 @@ import QuizTab from "./QuizTab";
 import ResourcesTab from "./ResourcesTab";
 
 const TABS = [
-  { key: "learn", label: "Learn", icon: "📖" },
-  { key: "ask", label: "Ask", icon: "💬" },
-  { key: "flashcards", label: "Flashcards", icon: "🗂️" },
-  { key: "quiz", label: "Quiz", icon: "✅" },
-  { key: "resources", label: "Resources", icon: "🎬" },
-  { key: "listen", label: "Listen", icon: "🎧" },
+  { key: "learn", label: "Learn", icon: BookOpenText },
+  { key: "ask", label: "Ask", icon: MessageCircleQuestion },
+  { key: "flashcards", label: "Flashcards", icon: Layers },
+  { key: "quiz", label: "Quiz", icon: Trophy },
+  { key: "resources", label: "Resources", icon: PlayCircle },
+  { key: "listen", label: "Listen", icon: Headphones },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
 export default function StudySpace({ guideId, initialTab }: { guideId: string; initialTab?: string }) {
+  const user = useCurrentUser();
   const [guide, setGuide] = useState<GuideDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabKey>(TABS.some((t) => t.key === initialTab) ? (initialTab as TabKey) : "learn");
@@ -85,6 +88,8 @@ export default function StudySpace({ guideId, initialTab }: { guideId: string; i
         </div>
       </div>
 
+      {user?.isGuest && <TrialBanner guideId={guide.guideId} />}
+
       {/* Tabs */}
       <div className="sticky top-16 z-30 -mx-4 mt-8 border-b border-line bg-canvas/90 px-4 backdrop-blur-md sm:-mx-6 sm:px-6">
         <nav aria-label="Study space" className="flex gap-1 overflow-x-auto py-2">
@@ -98,7 +103,7 @@ export default function StudySpace({ guideId, initialTab }: { guideId: string; i
                 tab === t.key ? "bg-ink text-canvas" : "text-subtle hover:bg-muted hover:text-ink"
               }`}
             >
-              <span aria-hidden="true">{t.icon}</span>
+              <t.icon className="size-4" aria-hidden="true" />
               {t.label}
               {t.key === "flashcards" && guide.flashcardCount > 0 && <span className="text-xs opacity-70">{guide.flashcardCount}</span>}
             </button>
@@ -207,6 +212,29 @@ function RemakePractice({ guide, onDone }: { guide: GuideDetail; onDone: (g: Gui
       <button type="button" onClick={remake} disabled={busy} className="shrink-0 font-semibold text-brand-deep hover:underline disabled:opacity-50">
         {busy ? "Making them…" : "Make them again"}
       </button>
+    </div>
+  );
+}
+
+
+/** Shown to guests: their trial lesson is temporary until they create an account. */
+function TrialBanner({ guideId }: { guideId: string }) {
+  const next = encodeURIComponent(`/study/${guideId}`);
+  return (
+    <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-brand/20 bg-brand-soft/60 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="flex items-start gap-3 text-sm">
+        <Sparkles className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
+        <span>
+          <span className="font-semibold">You&apos;re on a free trial.</span> Create a free account to keep this lesson and unlock
+          audio, projects and defence practice.
+        </span>
+      </p>
+      <Link
+        href={`/signup?reason=trial&next=${next}`}
+        className="inline-flex shrink-0 items-center justify-center rounded-full bg-brand px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-deep"
+      >
+        Save my lesson
+      </Link>
     </div>
   );
 }

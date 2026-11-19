@@ -1,5 +1,6 @@
 "use client";
 
+import { Lightbulb, Square, Volume2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { GuideDetail, GuideSection } from "@/lib/api";
 import { Button, ProgressBar } from "@/components/ui";
@@ -148,8 +149,8 @@ function SectionView({ section, number }: { section: GuideSection; number: numbe
 
       {section.analogy && (
         <aside className="mt-6 flex gap-4 rounded-2xl bg-brand-soft/50 p-5">
-          <span className="text-2xl" aria-hidden="true">
-            💡
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-canvas text-brand" aria-hidden="true">
+            <Lightbulb className="size-5" />
           </span>
           <div>
             <p className="text-xs font-semibold tracking-[0.14em] text-brand-deep uppercase">Think of it like this</p>
@@ -243,7 +244,7 @@ function ReadAloud({ section }: { section: GuideSection }) {
       aria-pressed={speaking}
       className="inline-flex shrink-0 items-center gap-2 rounded-full border border-line bg-canvas px-4 py-2 text-sm font-medium transition hover:border-brand/50"
     >
-      <span aria-hidden="true">{speaking ? "⏹" : "🔊"}</span>
+      {speaking ? <Square className="size-4" aria-hidden="true" /> : <Volume2 className="size-4" aria-hidden="true" />}
       {speaking ? "Stop reading" : "Read aloud"}
     </button>
   );

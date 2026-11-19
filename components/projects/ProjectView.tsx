@@ -1,5 +1,6 @@
 "use client";
 
+import { FileText, Mic, Presentation, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -8,10 +9,10 @@ import { Button, Card, ErrorNote, Icons, LinkButton, LoadingBlock, ProgressBar, 
 import { ClosingSlidePreview, SlidePreview, TitleSlidePreview } from "./SlidePreview";
 
 const TABS = [
-  { key: "slides", label: "Slides", icon: "🖼️" },
-  { key: "script", label: "Presenter script", icon: "🎤" },
-  { key: "coach", label: "Defense coach", icon: "🛡️" },
-  { key: "practice", label: "Practise", icon: "🎯" },
+  { key: "slides", label: "Slides", icon: Presentation },
+  { key: "script", label: "Presenter script", icon: FileText },
+  { key: "coach", label: "Defence coach", icon: ShieldCheck },
+  { key: "practice", label: "Practise", icon: Mic },
 ] as const;
 type TabKey = (typeof TABS)[number]["key"];
 
@@ -98,7 +99,7 @@ export default function ProjectView({ projectId }: { projectId: string }) {
                 tab === t.key ? "bg-ink text-canvas" : "text-subtle hover:bg-muted hover:text-ink"
               }`}
             >
-              <span aria-hidden="true">{t.icon}</span>
+              <t.icon className="size-4" aria-hidden="true" />
               {t.label}
             </button>
           ))}
@@ -127,7 +128,7 @@ const STAGES = [
   { key: "reading", label: "Reading your brief" },
   { key: "writing", label: "Writing your slides" },
   { key: "designing", label: "Designing the PowerPoint" },
-  { key: "coaching", label: "Preparing your script and defense" },
+  { key: "coaching", label: "Preparing your script and defence" },
 ];
 
 function Building({ project }: { project: ProjectDetail }) {
@@ -135,7 +136,7 @@ function Building({ project }: { project: ProjectDetail }) {
   return (
     <Card className="mx-auto max-w-xl p-8 sm:p-10">
       <div className="flex items-center gap-4">
-        <div className="">
+        <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-ink text-canvas">
           <Spinner className="size-7" />
         </div>
         <div className="min-w-0">
@@ -217,20 +218,20 @@ function SlideItem({ number, notes, children }: { number: number; notes: string 
 }
 
 function ScriptTab({ project }: { project: ProjectDetail }) {
-  const defense = project.defense!;
-  const totalSeconds = defense.script.reduce((n, s) => n + (s.seconds || 0), 0);
+  const defence = project.defense!;
+  const totalSeconds = defence.script.reduce((n, s) => n + (s.seconds || 0), 0);
   return (
     <div className="mx-auto max-w-3xl">
       <div className="rounded-2xl bg-ink p-6 text-canvas sm:p-8">
         <p className="text-xs font-semibold tracking-[0.16em] text-brand-soft uppercase">Open with</p>
-        <p className="mt-2 font-display text-2xl leading-snug">“{defense.openingLine}”</p>
+        <p className="mt-2 font-display text-2xl leading-snug">“{defence.openingLine}”</p>
         <p className="mt-4 text-sm text-canvas/70">
           Planned length: about {Math.round(totalSeconds / 60)} min for a {project.durationMinutes}-minute slot. Practise out loud with a timer
           at least twice.
         </p>
       </div>
       <ol className="mt-8 space-y-4">
-        {defense.script.map((s) => (
+        {defence.script.map((s) => (
           <li key={s.slideNumber} className="rounded-2xl border border-line bg-canvas p-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-display text-xl font-semibold">
@@ -247,21 +248,21 @@ function ScriptTab({ project }: { project: ProjectDetail }) {
       </ol>
       <div className="mt-8 rounded-2xl bg-brand p-6 text-white sm:p-8">
         <p className="text-xs font-semibold tracking-[0.16em] uppercase opacity-80">Close with</p>
-        <p className="mt-2 font-display text-2xl leading-snug">“{defense.closingLine}”</p>
+        <p className="mt-2 font-display text-2xl leading-snug">“{defence.closingLine}”</p>
       </div>
     </div>
   );
 }
 
 function CoachTab({ project, onPractise }: { project: ProjectDetail; onPractise: () => void }) {
-  const defense = project.defense!;
+  const defence = project.defense!;
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_340px]">
       <section>
         <h2 className="font-display text-2xl font-semibold">Questions your lecturer is likely to ask</h2>
         <p className="mt-1 text-subtle">Try answering each one out loud before you reveal the model answer.</p>
         <ol className="mt-5 space-y-4">
-          {defense.likelyQuestions.map((q, i) => (
+          {defence.likelyQuestions.map((q, i) => (
             <LikelyQuestion key={i} number={i + 1} q={q} />
           ))}
         </ol>
@@ -273,7 +274,7 @@ function CoachTab({ project, onPractise }: { project: ProjectDetail; onPractise:
         <Card className="bg-ink text-canvas">
           <p className="text-xs font-semibold tracking-[0.16em] text-brand-soft uppercase">How to defend it</p>
           <ul className="mt-3 space-y-3 text-sm leading-relaxed">
-            {defense.strategy.map((s) => (
+            {defence.strategy.map((s) => (
               <li key={s} className="flex gap-2">
                 <span className="text-brand-soft" aria-hidden="true">
                   ✓
@@ -283,11 +284,11 @@ function CoachTab({ project, onPractise }: { project: ProjectDetail; onPractise:
             ))}
           </ul>
         </Card>
-        {defense.weakSpots.length > 0 && (
+        {defence.weakSpots.length > 0 && (
           <Card>
             <p className="text-xs font-semibold tracking-[0.16em] text-brand-deep uppercase">Be ready to defend</p>
             <ul className="mt-3 space-y-2 text-sm leading-relaxed">
-              {defense.weakSpots.map((w) => (
+              {defence.weakSpots.map((w) => (
                 <li key={w} className="flex gap-2">
                   <span className="text-brand" aria-hidden="true">
                     !
@@ -351,7 +352,7 @@ function PracticeTab({ project }: { project: ProjectDetail }) {
 
   return (
     <Card className="mx-auto max-w-2xl bg-ink p-8 text-center text-canvas sm:p-10">
-      <span className=" ">{Icons.shield}</span>
+      <span className="mx-auto grid size-16 place-items-center rounded-2xl bg-brand text-white">{Icons.shield}</span>
       <h2 className="mt-5 font-display text-3xl font-semibold">Rehearse with a strict examiner</h2>
       <p className="mx-auto mt-3 max-w-md text-canvas/75">
         The examiner reads your slides, finds the weak spots and asks you five tough questions. Answer by typing or speaking and get

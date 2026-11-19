@@ -2,6 +2,8 @@
 
 import logging
 import secrets
+import threading
+import time
 from urllib.parse import urlencode
 
 import httpx
@@ -12,7 +14,19 @@ from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from ..auth.deps import SESSION_COOKIE, clear_session_cookie, optional_user, set_session_cookie
-from ..auth.service import authenticate, create_session, end_session, google_user, register, user_json
+from ..auth.mailer import send_password_reset
+from ..auth.service import (
+    authenticate,
+    create_guest,
+    create_session,
+    end_session,
+    finish_password_reset,
+    google_user,
+    merge_guest,
+    register,
+    start_password_reset,
+    user_json,
+)
 from ..config import get_settings
 from ..db import get_db
 from ..errors import AppError
@@ -61,9 +75,12 @@ class SignupBody(BaseModel):
 
 
 @router.post("/signup", status_code=201)
-def signup(body: SignupBody, response: Response, db: Session = Depends(get_db)) -> dict:
-    user = register(db, name=body.name, email=body.email, password=body.password)
-    set_session_cookie(response, create_session(db, user))
+async def signup(
+    body: SignupBody, response: Response, db: Session = Depends(get_db), current: User | None = Depends(optional_user)
+) -> dict:
+    """A guest who signs up keeps everything they made during the trial."""
+    user = await run_in_threadpool(register, db, name=body.name, email=body.email, password=body.password, guest=current)
+    set_session_cookie(response, await run_in_threadpool(create_session, db, user))
     return {"user": user_json(user)}
 
 
@@ -73,8 +90,66 @@ class LoginBody(BaseModel):
 
 
 @router.post("/login")
-def login(body: LoginBody, response: Response, db: Session = Depends(get_db)) -> dict:
-    user = authenticate(db, email=body.email, password=body.password)
+async def login(
+    body: LoginBody, response: Response, db: Session = Depends(get_db), current: User | None = Depends(optional_user)
+) -> dict:
+    user = await run_in_threadpool(authenticate, db, email=body.email, password=body.password)
+    await run_in_threadpool(merge_guest, db, current, user)
+    set_session_cookie(response, await run_in_threadpool(create_session, db, user))
+    return {"user": user_json(user)}
+
+
+# --- Guest trial -------------------------------------------------------------
+_guest_starts: dict[str, list[float]] = {}
+_guest_lock = threading.Lock()
+GUESTS_PER_IP_PER_HOUR = 5
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "")
+    return forwarded.split(",")[0].strip() or (request.client.host if request.client else "unknown")
+
+
+@router.post("/guest")
+async def start_guest(request: Request, response: Response, db: Session = Depends(get_db), current: User | None = Depends(optional_user)) -> dict:
+    """Starts a free trial without an account, so a visitor can upload once and see their lesson first."""
+    if current is not None:
+        return {"user": user_json(current)}
+    ip, now = _client_ip(request), time.monotonic()
+    with _guest_lock:
+        recent = [t for t in _guest_starts.get(ip, []) if now - t < 3600]
+        if len(recent) >= GUESTS_PER_IP_PER_HOUR:
+            raise AppError("TOO_MANY_TRIALS", 429, "Too many free trials from this network. Create a free account to continue.")
+        _guest_starts[ip] = [*recent, now]
+    user = await run_in_threadpool(create_guest, db)
+    set_session_cookie(response, await run_in_threadpool(create_session, db, user))
+    return {"user": user_json(user)}
+
+
+# --- Forgot password -----------------------------------------------------------
+class ForgotBody(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+
+
+@router.post("/forgot")
+def forgot_password(body: ForgotBody, db: Session = Depends(get_db)) -> dict:
+    """Emails a reset link if the address has an account. Always answers the same, so it can't reveal who has one."""
+    found = start_password_reset(db, body.email)
+    if found:
+        user, token = found
+        link = f"{get_settings().app_url.rstrip('/')}/reset-password?token={token}"
+        send_password_reset(user.email, user.name, link)
+    return {"ok": True}
+
+
+class ResetBody(BaseModel):
+    token: str = Field(min_length=20, max_length=200)
+    password: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/reset")
+def reset_password(body: ResetBody, response: Response, db: Session = Depends(get_db)) -> dict:
+    user = finish_password_reset(db, body.token, body.password)
     set_session_cookie(response, create_session(db, user))
     return {"user": user_json(user)}
 
@@ -163,6 +238,7 @@ async def google_callback(
     user = await run_in_threadpool(
         google_user, db, sub=identity["sub"], email=identity["email"], name=identity.get("name") or "", picture=identity.get("picture")
     )
+    await run_in_threadpool(merge_guest, db, await optional_user(request), user)
     token = await run_in_threadpool(create_session, db, user)
     response = RedirectResponse(_safe_next(next_path), status_code=302)
     response.delete_cookie(OAUTH_COOKIE, path="/api/auth")

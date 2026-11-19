@@ -16,13 +16,16 @@ export default function SiteFooter() {
           <Link href="/#how-it-works" className="text-subtle hover:text-ink">How it works</Link>
           <Link href="/#features" className="text-subtle hover:text-ink">Features</Link>
           <Link href="/#projects" className="text-subtle hover:text-ink">Projects</Link>
-          <Link href="/practice" className="text-subtle hover:text-ink">Defense practice</Link>
+          <Link href="/#pricing" className="text-subtle hover:text-ink">Pricing</Link>
+          <Link href="/practice" className="text-subtle hover:text-ink">Defence practice</Link>
           <Link href="/listen/demo" className="text-subtle hover:text-ink">Demo episode</Link>
         </nav>
       </div>
       <div className="border-t border-line/70">
         <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-subtle sm:px-6">
-          © {new Date().getFullYear()} Study Mate.
+          © {new Date().getFullYear()} Study Mate ·{" "}
+          <Link href="/privacy" className="hover:text-ink">Privacy</Link> ·{" "}
+          <Link href="/terms" className="hover:text-ink">Terms</Link>
         </p>
       </div>
     </footer>

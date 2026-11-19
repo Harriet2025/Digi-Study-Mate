@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 const POINTS = [
   ["Lessons that click", "Your slides, explained step by step with diagrams and examples."],
   ["Practice that sticks", "Flashcards, rated quizzes and a tutor that cites your pages."],
-  ["Ready to present", "Slides, a script and defense coaching for every project."],
+  ["Ready to present", "A draft structure and defence practice for every project."],
 ];
 
 /** Two-column frame for the login and sign-up pages. */
@@ -20,7 +20,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <ul className="relative mt-10 space-y-6">
           {POINTS.map(([title, body]) => (
             <li key={title} className="flex gap-4">
-              <span className=" ">✓</span>
+              <span className="mt-1 grid size-6 shrink-0 place-items-center rounded-full bg-brand text-xs font-bold text-white">✓</span>
               <span>
                 <span className="block font-semibold">{title}</span>
                 <span className="text-sm text-line">{body}</span>

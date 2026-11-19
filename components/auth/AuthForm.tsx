@@ -29,7 +29,7 @@ const INPUT =
   "mt-1.5 w-full rounded-2xl border border-line bg-white/80 px-4 py-3 text-base text-ink placeholder:text-subtle/60 " +
   "focus:border-brand focus:ring-2 focus:ring-brand/25 focus:outline-none";
 
-export default function AuthForm({ mode, next, error }: { mode: Mode; next?: string; error?: string }) {
+export default function AuthForm({ mode, next, error, reason }: { mode: Mode; next?: string; error?: string; reason?: string }) {
   const destination = safeNext(next);
   const [google, setGoogle] = useState<boolean | null>(null);
   const [name, setName] = useState("");
@@ -37,11 +37,15 @@ export default function AuthForm({ mode, next, error }: { mode: Mode; next?: str
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [trial, setTrial] = useState(reason === "trial");
   const [message, setMessage] = useState<string | null>(error ? GOOGLE_ERRORS[error] ?? "Something went wrong. Please try again." : null);
 
   useEffect(() => {
-    // Already signed in? Skip this page.
-    fetchMe().then((user) => user && window.location.replace(destination));
+    // Already signed in? Skip this page. (Guests stay: they're here to save their trial.)
+    fetchMe().then((user) => {
+      if (user && !user.isGuest) window.location.replace(destination);
+      if (user?.isGuest) setTrial(true);
+    });
     fetch("/api/auth/providers")
       .then((r) => (r.ok ? r.json() : { google: false }))
       .then((p: { google: boolean }) => setGoogle(p.google))
@@ -72,13 +76,24 @@ export default function AuthForm({ mode, next, error }: { mode: Mode; next?: str
   }
 
   const isSignup = mode === "signup";
-  const otherHref = `${isSignup ? "/login" : "/signup"}${next ? `?next=${encodeURIComponent(destination)}` : ""}`;
+  const otherQuery = new URLSearchParams();
+  if (next) otherQuery.set("next", destination);
+  if (trial) otherQuery.set("reason", "trial");
+  const otherHref = `${isSignup ? "/login" : "/signup"}${otherQuery.size ? `?${otherQuery}` : ""}`;
 
   return (
     <div className="w-full max-w-md">
-      <h1 className="font-display text-4xl font-semibold tracking-tight">{isSignup ? "Create your account" : "Welcome back"}</h1>
+      <h1 className="font-display text-4xl font-semibold tracking-tight">
+        {isSignup ? (trial ? "Keep your lesson" : "Create your account") : "Welcome back"}
+      </h1>
       <p className="mt-2 text-subtle">
-        {isSignup ? "Your lessons, flashcards and projects stay private to you." : "Log in to pick up where you left off."}
+        {isSignup
+          ? trial
+            ? "Create a free account and everything from your trial comes with you, plus audio lessons, projects and defence practice."
+            : "Your lessons, flashcards and projects stay private to you."
+          : trial
+            ? "Log in and we'll add your trial lesson to your account."
+            : "Log in to pick up where you left off."}
       </p>
 
       {google && (
@@ -120,6 +135,11 @@ export default function AuthForm({ mode, next, error }: { mode: Mode; next?: str
         <label className="block text-sm font-medium">
           <span className="flex items-center justify-between">
             Password
+            {!isSignup && (
+              <Link href="/forgot-password" className="ml-auto mr-3 text-xs font-medium text-brand hover:underline">
+                Forgot password?
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setShowPassword((s) => !s)}

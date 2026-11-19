@@ -1,5 +1,6 @@
 "use client";
 
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -52,7 +53,7 @@ export default function ProjectsHome() {
                   href={`/projects/${p.projectId}`}
                   className="flex items-center gap-4 rounded-2xl border border-line bg-canvas p-5 transition hover:-translate-y-0.5 hover:shadow-lg"
                 >
-                  <span className="">
+                  <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-ink text-xs font-bold tracking-wide text-canvas">
                     PPTX
                   </span>
                   <span className="min-w-0 flex-1">
@@ -159,7 +160,7 @@ function NewProjectForm() {
             }}
             className="flex w-full items-center gap-4 rounded-2xl border-2 border-dashed border-line bg-muted/40 px-5 py-5 text-left transition hover:border-brand/50"
           >
-            <span className="" aria-hidden="true">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand text-white" aria-hidden="true">
               ⬆
             </span>
             <span className="min-w-0">
@@ -205,11 +206,11 @@ function NewProjectForm() {
         {error && <ErrorNote>{error}</ErrorNote>}
 
         <Button type="submit" disabled={submitting} className="w-full py-3.5 text-base">
-          {submitting ? <Spinner className="size-4" /> : <span aria-hidden="true">✨</span>}
-          {submitting ? "Starting…" : "Create my presentation and defense pack"}
+          {submitting ? <Spinner className="size-4" /> : <Sparkles className="size-4" aria-hidden="true" />}
+          {submitting ? "Starting…" : "Create my draft and practice pack"}
         </Button>
         <p className="text-center text-xs text-subtle">
-          You&apos;ll get a designed .pptx with speaker notes, a presenter script, likely questions with model answers, and practice with an examiner.
+          You&apos;ll get a draft .pptx to edit and make your own, speaking notes, likely questions with model answers, and practice with an examiner. Check your course&apos;s rules on AI help.
         </p>
       </form>
     </Card>

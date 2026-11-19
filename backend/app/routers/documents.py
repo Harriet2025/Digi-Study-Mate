@@ -1,9 +1,10 @@
 import shutil
 
-from fastapi import APIRouter, Depends, File, Response, UploadFile
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from ..auth.deps import guest_limit
 from ..db import get_db
 from ..errors import AppError
 from ..ingestion.service import ingest_document
@@ -26,8 +27,9 @@ def _document_json(d: Document) -> dict:
 
 
 @router.post("/upload", status_code=201)
-def upload_document(file: UploadFile = File(...), db: Session = Depends(get_db)) -> dict:
+def upload_document(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)) -> dict:
     """Upload a .pdf or .pptx (max 25 MB). Extracts, cleans and chunks the text and stores it."""
+    guest_limit(request, db.scalar(select(func.count(Document.id))) or 0, 1)
     data = file.file.read(MAX_FILE_BYTES + 1)
     if len(data) > MAX_FILE_BYTES:
         raise AppError("FILE_TOO_LARGE", 413, f"File exceeds the {MAX_FILE_BYTES // (1024 * 1024)} MB limit.")

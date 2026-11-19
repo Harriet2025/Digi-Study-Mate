@@ -1,5 +1,6 @@
 "use client";
 
+import { BookOpenText } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -89,7 +90,7 @@ export default function LibraryView() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-display text-lg leading-snug font-semibold">{e.title}</p>
-                  <span className="">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-ink text-canvas transition group-hover:bg-brand">
                     {Icons.play}
                   </span>
                 </div>
@@ -144,7 +145,7 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
     <Card className="p-0">
       <div className="flex flex-col gap-4 border-b border-line p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div className="flex min-w-0 items-center gap-4">
-          <span className="">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-xs font-bold text-brand-deep uppercase">
             {doc.sourceType}
           </span>
           <div className="min-w-0">
@@ -198,7 +199,7 @@ function DocumentCard({ doc, onChanged }: { doc: LibraryData["documents"][number
           )}
         </div>
         <div>
-          <p className="text-xs font-semibold tracking-[0.14em] text-subtle uppercase">Defense practice</p>
+          <p className="text-xs font-semibold tracking-[0.14em] text-subtle uppercase">Defence practice</p>
           {doc.questionSets.length === 0 ? (
             <p className="mt-3 text-sm text-subtle">No practice sets yet.</p>
           ) : (
@@ -235,7 +236,7 @@ function GuideCard({ guide: g, onChanged }: { guide: GuideSummary; onChanged: ()
             }`}
             aria-hidden="true"
           >
-            {building ? <Spinner className="size-5" /> : g.status === "failed" ? "!" : "📖"}
+            {building ? <Spinner className="size-5" /> : g.status === "failed" ? "!" : <BookOpenText className="size-5" />}
           </span>
           <span className="min-w-0 flex-1">
             <span className="line-clamp-2 font-display text-lg leading-snug font-semibold">{g.title}</span>

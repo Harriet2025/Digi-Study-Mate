@@ -31,7 +31,7 @@ STAGE_LABELS = {
     "reading": "Reading your brief",
     "writing": "Writing your slides",
     "designing": "Designing the PowerPoint",
-    "coaching": "Preparing your presentation script and defense",
+    "coaching": "Preparing your presentation script and defence",
     "done": "Ready",
     "failed": "Something went wrong",
 }

@@ -17,9 +17,10 @@ from .db import get_engine
 from .episodes.service import fail_interrupted_jobs
 from .guides.service import fail_interrupted_guides
 from .projects.service import fail_interrupted_projects
+from .exams.service import fail_interrupted_exams
 from .schema import ensure_schema
 from .errors import AppError
-from .routers import ask, auth, defense, documents, episodes, flashcards, guides, media, projects, study
+from .routers import ask, auth, defense, documents, episodes, exams, flashcards, guides, media, projects, social, study
 
 logger = logging.getLogger("study_mate")
 
@@ -36,7 +37,7 @@ async def lifespan(_: FastAPI):
         from sqlalchemy.orm import Session
 
         with Session(get_engine()) as db:
-            failed = fail_interrupted_jobs(db) + fail_interrupted_guides(db) + fail_interrupted_projects(db)
+            failed = fail_interrupted_jobs(db) + fail_interrupted_guides(db) + fail_interrupted_projects(db) + fail_interrupted_exams(db)
             if failed:
                 logger.warning("Marked %d interrupted lesson(s) as failed", failed)
             removed = delete_old_guests(db)
@@ -62,7 +63,7 @@ app.include_router(auth.router)
 # Guests (free trial) can upload once and study it; the library, progress, audio, projects and defence practice need an account.
 for module in (documents, guides, flashcards, media):
     app.include_router(module.router, dependencies=[Depends(require_user)])
-for module in (study, episodes, projects, ask, defense):
+for module in (study, episodes, projects, ask, defense, exams, social):
     app.include_router(module.router, dependencies=[Depends(require_user), Depends(members_only)])
 
 

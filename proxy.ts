@@ -26,5 +26,8 @@ export const config = {
     "/flashcards",
     "/progress",
     "/projects/:path*",
+    "/exams/:path*",
+    "/rooms/:path*",
+    "/battle/:path*",
   ],
 };

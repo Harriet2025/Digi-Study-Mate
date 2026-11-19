@@ -28,7 +28,7 @@ type Day = Insights["calendar"][number];
 
 /** One number per day for "how much did I study": a card review counts 1, a quiz 3, a practice answer 2… */
 function activityScore(d: Day): number {
-  return d.reviews + d.quizzes * 3 + d.questionsAsked + d.defense * 2 + Math.round(d.listenMinutes / 5);
+  return d.reviews + d.quizzes * 3 + d.questionsAsked + d.defense * 2 + (d.exams ?? 0) * 5 + (d.battles ?? 0) * 3 + Math.round(d.listenMinutes / 5);
 }
 
 export default function ProgressView() {

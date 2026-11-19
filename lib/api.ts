@@ -148,7 +148,17 @@ export interface PracticeSet {
 
 export interface Insights {
   streak: { current: number; longest: number; activeToday: boolean };
-  calendar: { date: string; listenMinutes: number; reviews: number; defense: number; quizzes: number; questionsAsked: number; active: boolean }[];
+  calendar: {
+    date: string;
+    listenMinutes: number;
+    reviews: number;
+    defense: number;
+    quizzes: number;
+    questionsAsked: number;
+    exams: number;
+    battles: number;
+    active: boolean;
+  }[];
   totals: {
     listenMinutes: number;
     lessons: number;
@@ -307,6 +317,175 @@ export interface ProjectDetail extends ProjectSummary {
   downloadUrl: string | null;
 }
 
+// --- Exam focus ----------------------------------------------------------------
+
+export interface SummarySheet {
+  guideId: string;
+  title: string;
+  pages: string | null;
+  bigIdea: string;
+  sections: { heading: string; points: string[] }[];
+  keyTerms: { term: string; definition: string }[];
+  rules: string[];
+  mistakes: string[];
+  quickCheck: { question: string; answer: string }[];
+}
+
+export interface ExamTopic {
+  name: string;
+  summary: string;
+  papersAppeared: number;
+  questionCount: number;
+  totalMarks: number;
+  trend: "rising" | "steady" | "falling" | "new";
+  priority: "high" | "medium" | "low";
+  sampleQuestions: string[];
+}
+
+export interface PredictedQuestion {
+  question: string;
+  topic: string;
+  marks: number;
+  likelihood: "high" | "medium";
+  reason: string;
+}
+
+export interface BankSummary {
+  bankId: string;
+  course: string;
+  status: EpisodeStatus;
+  stage: string;
+  stageLabel: string;
+  progress: number;
+  error: string | null;
+  paperCount: number;
+  topicCount: number;
+  topTopics: string[];
+  createdAt: string | null;
+}
+
+export interface MockSummary {
+  mockId: string;
+  title: string;
+  mode: "exam" | "practice";
+  status: "queued" | "processing" | "ready" | "failed" | "in_progress" | "submitted";
+  progress: number;
+  error: string | null;
+  bankId: string | null;
+  guideId: string | null;
+  questionCount: number;
+  durationMinutes: number;
+  percent: number | null;
+  createdAt: string | null;
+  submittedAt: string | null;
+}
+
+export interface BankDetail extends BankSummary {
+  guideIds: string[];
+  papers: { paperId: string; filename: string; year: string | null; questionCount: number }[];
+  overview: string | null;
+  topics: ExamTopic[];
+  predicted: PredictedQuestion[];
+  mocks: MockSummary[];
+}
+
+export interface MockQuestion {
+  id: string;
+  type: "mcq" | "short";
+  topic: string;
+  question: string;
+  marks: number;
+  options: string[];
+  correctIndex?: number;
+  explanation?: string;
+  modelAnswer?: string;
+  markingPoints?: string[];
+}
+
+export interface MockResult {
+  score: number;
+  total: number;
+  percent: number;
+  late: boolean;
+  topics: { topic: string; awarded: number; available: number; lost: number; percent: number }[];
+  questions: { id: string; awarded: number; marks: number; feedback: string }[];
+}
+
+export interface MockDetail extends MockSummary {
+  questions: MockQuestion[];
+  totalMarks: number;
+  startedAt: string | null;
+  remainingSeconds: number | null;
+  answers: Record<string, number | string | null> | null;
+  result: MockResult | null;
+}
+
+export type MockAnswer = number | string | null;
+
+// --- Social: study rooms and quiz battles ------------------------------------------
+
+export interface RoomSummary {
+  roomId: string;
+  name: string;
+  course: string | null;
+  memberCount: number;
+  shareCount: number;
+  isOwner: boolean;
+}
+
+export interface LeaderboardEntry {
+  userId: string;
+  name: string;
+  points: number;
+  streak: number;
+  rank: number;
+  badges: { id: "top" | "streak3" | "streak7" | "battle" | "exam" | "cards"; label: string }[];
+}
+
+export interface BattleSummary {
+  battleId: string;
+  code: string;
+  title: string;
+  status: "lobby" | "live" | "finished";
+  questionCount: number;
+  playerCount: number;
+  roomId: string | null;
+  createdAt: string | null;
+  winner: string | null;
+}
+
+export interface RoomDetail {
+  roomId: string;
+  name: string;
+  course: string | null;
+  joinCode: string;
+  isOwner: boolean;
+  onLeaderboard: boolean;
+  members: { userId: string; name: string; isOwner: boolean; isMe: boolean }[];
+  shares: { shareId: string; title: string; sharedBy: string; isMine: boolean; saved: boolean; saveCount: number; createdAt: string | null }[];
+  leaderboard: LeaderboardEntry[];
+  battles: BattleSummary[];
+}
+
+export interface BattleState extends BattleSummary {
+  phase: "lobby" | "countdown" | "question" | "reveal" | "finished";
+  secondsLeft?: number;
+  isHost: boolean;
+  secondsPerQuestion: number;
+  players: { name: string; score: number; isMe: boolean; answered: boolean }[];
+  question?: {
+    index: number;
+    text: string;
+    options: string[];
+    myChoice: number | null;
+    correctIndex?: number;
+    explanation?: string;
+    counts?: number[];
+    myPoints?: number;
+  };
+  review?: { question: string; answer: string; myChoice: number | null }[];
+}
+
 // ---------------------------------------------------------------------------
 // Requests
 // ---------------------------------------------------------------------------
@@ -402,6 +581,42 @@ export const api = {
   createProject: (form: FormData) => request<ProjectSummary>("/api/projects", { method: "POST", body: form }),
   deleteProject: (id: string) => request<void>(`/api/projects/${id}`, { method: "DELETE" }),
   practiceProject: (id: string) => request<{ setId: string }>(`/api/projects/${id}/practice`, { method: "POST" }),
+
+  summary: (guideId: string) => request<SummarySheet>(`/api/guides/${guideId}/summary`),
+  summaryPdfUrl: (guideId: string) => `/api/guides/${guideId}/summary.pdf`,
+
+  banks: () => request<BankSummary[]>("/api/exams/banks"),
+  bank: (id: string) => request<BankDetail>(`/api/exams/banks/${id}`),
+  createBank: (form: FormData) => request<BankSummary>("/api/exams/banks", { method: "POST", body: form }),
+  addPapers: (id: string, form: FormData) => request<BankSummary>(`/api/exams/banks/${id}/papers`, { method: "POST", body: form }),
+  reanalyseBank: (id: string) => request<BankSummary>(`/api/exams/banks/${id}/reanalyse`, { method: "POST" }),
+  deleteBank: (id: string) => request<void>(`/api/exams/banks/${id}`, { method: "DELETE" }),
+  mocks: () => request<MockSummary[]>("/api/exams/mocks"),
+  mock: (id: string) => request<MockDetail>(`/api/exams/mocks/${id}`),
+  createMock: (body: { bankId?: string; guideId?: string; mode: "exam" | "practice"; questionCount: number; durationMinutes: number; topic?: string }) =>
+    request<MockSummary>("/api/exams/mocks", json("POST", body)),
+  startMock: (id: string) => request<MockDetail>(`/api/exams/mocks/${id}/start`, { method: "POST" }),
+  checkAnswer: (id: string, questionId: string) => request<MockQuestion>(`/api/exams/mocks/${id}/check/${questionId}`),
+  submitMock: (id: string, answers: Record<string, MockAnswer>) => request<MockDetail>(`/api/exams/mocks/${id}/submit`, json("POST", { answers })),
+  deleteMock: (id: string) => request<void>(`/api/exams/mocks/${id}`, { method: "DELETE" }),
+
+  rooms: () => request<RoomSummary[]>("/api/rooms"),
+  room: (id: string) => request<RoomDetail>(`/api/rooms/${id}`),
+  createRoom: (body: { name: string; course?: string }) => request<RoomDetail>("/api/rooms", json("POST", body)),
+  joinRoom: (code: string) => request<RoomDetail>("/api/rooms/join", json("POST", { code })),
+  shareToRoom: (roomId: string, guideId: string) => request<RoomDetail>(`/api/rooms/${roomId}/shares`, json("POST", { guideId })),
+  saveShare: (roomId: string, shareId: string) => request<{ guideId: string }>(`/api/rooms/${roomId}/shares/${shareId}/save`, { method: "POST" }),
+  setOnLeaderboard: (roomId: string, onLeaderboard: boolean) =>
+    request<RoomDetail>(`/api/rooms/${roomId}/leaderboard`, json("PUT", { onLeaderboard })),
+  leaveRoom: (roomId: string) => request<void>(`/api/rooms/${roomId}/membership`, { method: "DELETE" }),
+
+  battles: () => request<BattleSummary[]>("/api/battles"),
+  createBattle: (body: { guideId: string; roomId?: string; secondsPerQuestion?: number }) => request<BattleSummary>("/api/battles", json("POST", body)),
+  joinBattle: (code: string) => request<BattleState>(`/api/battles/${code}/join`, { method: "POST" }),
+  startBattle: (code: string) => request<BattleState>(`/api/battles/${code}/start`, { method: "POST" }),
+  battle: (code: string) => request<BattleState>(`/api/battles/${code}`),
+  answerBattle: (code: string, index: number, choice: number) =>
+    request<{ accepted: boolean }>(`/api/battles/${code}/answer`, json("POST", { index, choice })),
 
   practiceSets: () => request<QuestionSetSummary[]>("/api/defense/sets"),
   practiceSet: (id: string) => request<PracticeSet>(`/api/defense/sets/${id}`),

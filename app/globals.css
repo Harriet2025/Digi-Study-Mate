@@ -136,3 +136,14 @@ html {
   padding-left: 1em;
   color: var(--color-subtle);
 }
+
+/* Printing a summary sheet: hide the site chrome, keep only the sheet. */
+@media print {
+  body > header, body > footer { display: none !important; }
+  body { background: white !important; }
+  body:has(.summary-sheet) main * { visibility: hidden; }
+  body:has(.summary-sheet) .summary-sheet,
+  body:has(.summary-sheet) .summary-sheet * { visibility: visible; }
+  body:has(.summary-sheet) .summary-sheet { position: absolute; inset: 0 auto auto 0; width: 100%; }
+  @page { size: A4; margin: 12mm; }
+}

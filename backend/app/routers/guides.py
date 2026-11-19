@@ -10,6 +10,7 @@ from ..auth.deps import guest_limit
 from ..auth.scoping import as_current_user
 from ..config import get_settings
 from ..db import get_db
+from ..exams.summary import get_summary, render_summary_pdf
 from ..flashcards.service import card_json, deck_stats, list_cards
 from ..models import ChatMessage, StudyGuide
 from ..guides.service import (
@@ -101,6 +102,20 @@ async def remake_practice(guide_id: str, db: Session = Depends(get_db)) -> dict:
     """Make the flashcards, quiz and resources again (e.g. after a failure)."""
     guide = await run_in_threadpool(regenerate_practice, db, guide_id)
     return guide_detail(db, guide)
+
+
+@router.get("/{guide_id}/summary")
+async def summary(guide_id: str, db: Session = Depends(get_db)) -> dict:
+    """The one-page revision sheet (made with AI on first request, then kept)."""
+    return await run_in_threadpool(get_summary, db, guide_id)
+
+
+@router.get("/{guide_id}/summary.pdf")
+async def summary_pdf(guide_id: str, db: Session = Depends(get_db)) -> Response:
+    sheet = await run_in_threadpool(get_summary, db, guide_id)
+    pdf = await run_in_threadpool(render_summary_pdf, sheet)
+    name = "".join(c for c in sheet["title"] if c.isalnum() or c in " -_")[:60].strip() or "summary"
+    return Response(content=pdf, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{name} - revision sheet.pdf"'})
 
 
 @router.get("/{guide_id}/flashcards")

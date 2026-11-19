@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from ..episodes.service import episode_summary
 from ..flashcards.service import _ready_cards, deck_stats
 from ..models import (
+    STUDY_EVENT_KINDS,
     DefenseAttempt,
     DefenseQuestion,
     DefenseQuestionSet,
@@ -112,19 +113,19 @@ def insights(db: Session) -> dict:
     today = date.today()
     since = datetime.combine(today - timedelta(days=CALENDAR_DAYS - 1), datetime.min.time())
 
-    per_day: dict[date, dict[str, float]] = defaultdict(
-        lambda: {"listen": 0.0, "review": 0.0, "defense": 0.0, "upload": 0.0, "quiz": 0.0, "chat": 0.0}
-    )
+    per_day: dict[date, dict[str, float]] = defaultdict(lambda: dict.fromkeys(STUDY_EVENT_KINDS, 0.0))
     for kind, amount, created in db.execute(select(StudyEvent.kind, StudyEvent.amount, StudyEvent.created_at)):
         per_day[created.date()][kind] += amount
 
-    active_days = {d for d, v in per_day.items() if v["listen"] >= 60 or v["review"] or v["defense"] or v["quiz"] or v["chat"]}
+    active_days = {
+        d for d, v in per_day.items() if v["listen"] >= 60 or v["review"] or v["defense"] or v["quiz"] or v["chat"] or v["exam"] or v["battle"]
+    }
     current, longest = _streaks(active_days, today)
 
     calendar = []
     for offset in range(CALENDAR_DAYS):
         d = since.date() + timedelta(days=offset)
-        v = per_day.get(d, {"listen": 0.0, "review": 0.0, "defense": 0.0, "quiz": 0.0, "chat": 0.0})
+        v = per_day.get(d, dict.fromkeys(STUDY_EVENT_KINDS, 0.0))
         calendar.append(
             {
                 "date": d.isoformat(),
@@ -133,6 +134,8 @@ def insights(db: Session) -> dict:
                 "defense": int(v["defense"]),
                 "quizzes": int(v["quiz"]),
                 "questionsAsked": int(v["chat"]),
+                "exams": int(v["exam"]),
+                "battles": int(v["battle"]),
                 "active": d in active_days,
             }
         )

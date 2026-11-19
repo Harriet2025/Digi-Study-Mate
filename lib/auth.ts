@@ -14,7 +14,7 @@ export type User = {
 export const SESSION_COOKIE = "sm_session";
 
 /** Pages that need an account (the proxy and the API both enforce this). */
-export const PROTECTED_PREFIXES = ["/upload", "/library", "/study", "/listen", "/practice", "/flashcards", "/progress", "/projects"];
+export const PROTECTED_PREFIXES = ["/upload", "/library", "/study", "/listen", "/practice", "/flashcards", "/progress", "/projects", "/exams", "/rooms", "/battle"];
 export const PUBLIC_PATHS = ["/listen/demo", "/upload"];
 
 export async function fetchMe(): Promise<User | null> {

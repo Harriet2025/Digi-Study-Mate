@@ -301,7 +301,7 @@ class Flashcard(OwnedMixin, TimestampMixin, Base):
     guide: Mapped["StudyGuide | None"] = relationship(back_populates="flashcards")
 
 
-STUDY_EVENT_KINDS = ("listen", "review", "defense", "upload", "quiz", "chat")
+STUDY_EVENT_KINDS = ("listen", "review", "defense", "upload", "quiz", "chat", "exam", "battle")
 
 
 class StudyEvent(OwnedMixin, Base):
@@ -343,6 +343,8 @@ class StudyGuide(OwnedMixin, TimestampMixin, Base):
     progress: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     error_message: Mapped[str | None] = mapped_column(String(500))
     ai_model: Mapped[str] = mapped_column(String(100), nullable=False)
+    #: The one-page revision sheet, made on first request and kept.
+    summary: Mapped[dict[str, Any] | None] = mapped_column(JSON)
 
     sections: Mapped[list["GuideSection"]] = relationship(
         back_populates="guide", cascade="all, delete-orphan", passive_deletes=True, order_by="GuideSection.position"
@@ -479,5 +481,176 @@ class Project(OwnedMixin, TimestampMixin, Base):
     ai_model: Mapped[str] = mapped_column(String(100), nullable=False)
 
 
+# ---------------------------------------------------------------------------
+# Exams: past-paper banks and mock exams
+# ---------------------------------------------------------------------------
+
+
+class ExamBank(OwnedMixin, TimestampMixin, Base):
+    """A course's past papers, analysed for recurring topics and likely questions."""
+
+    __tablename__ = "exam_banks"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    course: Mapped[str] = mapped_column(String(200), nullable=False)
+    #: Study spaces (slides) for this course, used to predict questions alongside the papers.
+    guide_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    status: Mapped[str] = mapped_column(Enum(*JOB_STATUSES, name="bank_status"), nullable=False, default="queued")
+    stage: Mapped[str] = mapped_column(String(30), nullable=False, default="queued")
+    progress: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
+    error_message: Mapped[str | None] = mapped_column(String(500))
+    #: {"topics": [...], "predicted": [...], "overview": str}
+    analysis: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    ai_model: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    papers: Mapped[list["PastPaper"]] = relationship(
+        back_populates="bank", cascade="all, delete-orphan", passive_deletes=True, order_by="PastPaper.created_at"
+    )
+
+
+class PastPaper(OwnedMixin, TimestampMixin, Base):
+    __tablename__ = "past_papers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    bank_id: Mapped[str] = mapped_column(ForeignKey("exam_banks.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    year: Mapped[str | None] = mapped_column(String(40))
+    text: Mapped[str] = mapped_column(LongText, nullable=False)
+    #: Questions found in the paper: [{"number", "text", "marks", "topic"}]
+    questions: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
+
+    bank: Mapped[ExamBank] = relationship(back_populates="papers")
+
+
+MOCK_STATUSES = ("queued", "processing", "ready", "failed", "in_progress", "submitted")
+
+
+class MockExam(OwnedMixin, TimestampMixin, Base):
+    """A practice test or a timed mock exam, built from a past-paper bank or a study space."""
+
+    __tablename__ = "mock_exams"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    bank_id: Mapped[str | None] = mapped_column(ForeignKey("exam_banks.id", ondelete="CASCADE"), index=True)
+    guide_id: Mapped[str | None] = mapped_column(ForeignKey("study_guides.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    mode: Mapped[str] = mapped_column(Enum("exam", "practice", name="mock_mode"), nullable=False, default="exam")
+    duration_minutes: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=30)
+    question_count: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=10)
+    status: Mapped[str] = mapped_column(Enum(*MOCK_STATUSES, name="mock_status"), nullable=False, default="queued")
+    progress: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
+    error_message: Mapped[str | None] = mapped_column(String(500))
+    #: Full questions including answers and marking points (never sent to the browser before submitting).
+    questions: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime)
+    answers: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    #: {"score", "total", "percent", "topics": [...], "questions": [...]}
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    ai_model: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
 #: Tables whose rows belong to a user.
-OWNED_MODELS = (Document, Episode, DefenseQuestionSet, DefenseQuestion, DefenseAttempt, ListeningProgress, Flashcard, StudyEvent, StudyGuide, QuizAttempt, ChatMessage, Project)
+OWNED_MODELS = (
+    Document,
+    Episode,
+    DefenseQuestionSet,
+    DefenseQuestion,
+    DefenseAttempt,
+    ListeningProgress,
+    Flashcard,
+    StudyEvent,
+    StudyGuide,
+    QuizAttempt,
+    ChatMessage,
+    Project,
+    ExamBank,
+    PastPaper,
+    MockExam,
+)
+
+
+# ---------------------------------------------------------------------------
+# Social: study rooms, leaderboards and quiz battles
+# These rows are shared between users, so they are not OwnedMixin; access is checked by membership.
+# ---------------------------------------------------------------------------
+
+
+class StudyRoom(TimestampMixin, Base):
+    __tablename__ = "study_rooms"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    course: Mapped[str | None] = mapped_column(String(200))
+    #: Six characters people type (or share as a link) to join.
+    join_code: Mapped[str] = mapped_column(String(12), nullable=False, unique=True)
+    owner_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    members: Mapped[list["RoomMember"]] = relationship(back_populates="room", cascade="all, delete-orphan", passive_deletes=True)
+    shares: Mapped[list["RoomShare"]] = relationship(
+        back_populates="room", cascade="all, delete-orphan", passive_deletes=True, order_by="RoomShare.created_at.desc()"
+    )
+
+
+class RoomMember(TimestampMixin, Base):
+    __tablename__ = "room_members"
+
+    room_id: Mapped[str] = mapped_column(ForeignKey("study_rooms.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True)
+    #: Members can hide themselves from the room's leaderboard.
+    on_leaderboard: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
+
+    room: Mapped[StudyRoom] = relationship(back_populates="members")
+    user: Mapped["User"] = relationship()
+
+
+class RoomShare(TimestampMixin, Base):
+    """A study space shared with a room. Members save their own copy (so everyone's data stays private)."""
+
+    __tablename__ = "room_shares"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    room_id: Mapped[str] = mapped_column(ForeignKey("study_rooms.id", ondelete="CASCADE"), nullable=False, index=True)
+    guide_id: Mapped[str] = mapped_column(ForeignKey("study_guides.id", ondelete="CASCADE"), nullable=False)
+    shared_by: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    #: user IDs who saved a copy
+    saved_by: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
+    room: Mapped[StudyRoom] = relationship(back_populates="shares")
+
+
+BATTLE_STATUSES = ("lobby", "live", "finished")
+
+
+class Battle(TimestampMixin, Base):
+    """A live quiz battle: everyone answers the same question at the same time; faster correct answers score more."""
+
+    __tablename__ = "battles"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    code: Mapped[str] = mapped_column(String(12), nullable=False, unique=True)
+    host_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    room_id: Mapped[str | None] = mapped_column(ForeignKey("study_rooms.id", ondelete="SET NULL"), index=True)
+    title: Mapped[str] = mapped_column(String(300), nullable=False)
+    #: Snapshot of the questions: [{"question", "options", "correctIndex", "explanation"}]
+    questions: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    seconds_per_question: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=20)
+    status: Mapped[str] = mapped_column(Enum(*BATTLE_STATUSES, name="battle_status"), nullable=False, default="lobby")
+    started_at: Mapped[datetime | None] = mapped_column(DateTime)
+    results_recorded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="0")
+
+    players: Mapped[list["BattlePlayer"]] = relationship(back_populates="battle", cascade="all, delete-orphan", passive_deletes=True)
+
+
+class BattlePlayer(TimestampMixin, Base):
+    __tablename__ = "battle_players"
+
+    battle_id: Mapped[str] = mapped_column(ForeignKey("battles.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(60), nullable=False)
+    score: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    #: {"0": {"choice": 2, "points": 830}, ...}
+    answers: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+
+    battle: Mapped[Battle] = relationship(back_populates="players")

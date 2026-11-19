@@ -1,8 +1,9 @@
 "use client";
 
-import { BookOpenText, Headphones, Layers, MessageCircleQuestion, PlayCircle, Sparkles, Trophy } from "lucide-react";
+import { BookOpenText, FileText, Headphones, Swords, Layers, MessageCircleQuestion, PlayCircle, Sparkles, Trophy } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/useCurrentUser";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, LANGUAGE_OPTIONS, LEVEL_OPTIONS, type GuideDetail } from "@/lib/api";
 import { Card, ErrorNote, LinkButton, LoadingBlock, Pill, ProgressBar, Spinner } from "@/components/ui";
@@ -12,12 +13,14 @@ import LearnTab from "./LearnTab";
 import ListenTab from "./ListenTab";
 import QuizTab from "./QuizTab";
 import ResourcesTab from "./ResourcesTab";
+import SummaryTab from "./SummaryTab";
 
 const TABS = [
   { key: "learn", label: "Learn", icon: BookOpenText },
   { key: "ask", label: "Ask", icon: MessageCircleQuestion },
   { key: "flashcards", label: "Flashcards", icon: Layers },
   { key: "quiz", label: "Quiz", icon: Trophy },
+  { key: "summary", label: "Summary", icon: FileText },
   { key: "resources", label: "Resources", icon: PlayCircle },
   { key: "listen", label: "Listen", icon: Headphones },
 ] as const;
@@ -86,6 +89,7 @@ export default function StudySpace({ guideId, initialTab }: { guideId: string; i
             {guide.bestQuizScore !== null && <Pill tone={guide.bestQuizScore >= 75 ? "success" : "brand"}>Best quiz: {guide.bestQuizScore}%</Pill>}
           </div>
         </div>
+        {user && !user.isGuest && guide.quiz.length >= 3 && <BattleButton guideId={guide.guideId} />}
       </div>
 
       {user?.isGuest && <TrialBanner guideId={guide.guideId} />}
@@ -121,6 +125,7 @@ export default function StudySpace({ guideId, initialTab }: { guideId: string; i
         {tab === "ask" && <AskTab guide={guide} />}
         {tab === "flashcards" && <ReviewSession guideId={guide.guideId} embedded />}
         {tab === "quiz" && <QuizTab guide={guide} onSubmitted={load} onReview={() => switchTab("learn")} />}
+        {tab === "summary" && <SummaryTab guide={guide} />}
         {tab === "resources" && <ResourcesTab guide={guide} />}
         {tab === "listen" && <ListenTab guide={guide} onChanged={load} />}
       </div>
@@ -236,5 +241,30 @@ function TrialBanner({ guideId }: { guideId: string }) {
         Save my lesson
       </Link>
     </div>
+  );
+}
+
+
+/** Start a live quiz battle on this lesson and go to its lobby to invite coursemates. */
+function BattleButton({ guideId }: { guideId: string }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          const b = await api.createBattle({ guideId });
+          router.push(`/battle/${b.code}`);
+        } catch {
+          setBusy(false);
+        }
+      }}
+      className="inline-flex shrink-0 items-center gap-2 self-start rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-canvas transition hover:bg-ink/85 disabled:opacity-60 lg:self-auto"
+    >
+      <Swords className="size-4" aria-hidden="true" /> Challenge coursemates
+    </button>
   );
 }

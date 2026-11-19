@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api, ApiError, timeAgo, type LibraryData, type QuestionSetSummary } from "@/lib/api";
-import { Button, Card, EmptyState, ErrorNote, Icons, LinkButton, LoadingBlock, Pill, Spinner } from "@/components/ui";
+import { Button, Card, EmptyState, ErrorNote, Icons, LinkButton, LoadingBlock, Spinner } from "@/components/ui";
 
 const SUGGESTED_PAGES = 10;
 
@@ -53,7 +53,7 @@ export default function PracticeHome({
       <section>
         <h2 className="font-display text-2xl font-semibold">Your practice sets</h2>
         {sets.length === 0 ? (
-          <p className="mt-3 text-subtle">None yet. Create your first set and you&apos;ll find it here.</p>
+          <p className="mt-3 text-subtle">None yet.</p>
         ) : (
           <ul className="mt-4 space-y-3">
             {sets.map((s) => (
@@ -137,7 +137,7 @@ function NewSetForm({
       <form onSubmit={submit} className="space-y-6">
         <div>
           <p className="text-xs font-semibold tracking-[0.18em] text-brand-soft uppercase">New practice set</p>
-          <h2 className="mt-2 font-display text-2xl font-semibold">Generate 5 panel questions</h2>
+          <h2 className="mt-2 font-display text-2xl font-semibold">Pick your material</h2>
         </div>
 
         <div>
@@ -196,17 +196,6 @@ function NewSetForm({
           {submitting ? "The panel is reading your material…" : "Generate questions"}
         </Button>
         {submitting && <p className="text-center text-xs text-canvas/60">This takes about 20–40 seconds.</p>}
-        <ul className="space-y-1.5 border-t border-canvas/10 pt-5 text-sm text-canvas/70">
-          <li>
-            <Pill tone="glass">1</Pill> Questions target logical gaps, missing evidence and unexplained terms
-          </li>
-          <li>
-            <Pill tone="glass">2</Pill> Answer by typing or recording yourself
-          </li>
-          <li>
-            <Pill tone="glass">3</Pill> See what you covered, what you missed, and a model outline
-          </li>
-        </ul>
       </form>
     </Card>
   );

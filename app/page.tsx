@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  BookOpenText,
   Check,
   FileText,
   GraduationCap,
@@ -9,7 +8,6 @@ import {
   type LucideIcon,
   MessageCircleQuestion,
   Mic,
-  Network,
   Play,
   Presentation,
   ShieldCheck,
@@ -21,6 +19,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { Float, Reveal } from "@/components/home/Motion";
 import { DrawLine } from "@/components/motion/Gsap";
+import FeatureArc from "@/components/home/FeatureArc";
+import { FEATURES } from "@/components/home/features";
+import StepsShowcase from "@/components/home/StepsShowcase";
 import Typewriter from "@/components/home/Typewriter";
 import YouTubeLogo from "@/components/brand/YouTubeLogo";
 
@@ -167,29 +168,20 @@ function HeroVisual() {
   );
 }
 
-const FEATURES: { icon: LucideIcon; title: string; body: string; image: string; alt: string }[] = [
-  { icon: BookOpenText, title: "Step-by-step lessons", body: "Plain language, real examples.", image: "lesson", alt: "A lesson step explaining glycolysis in plain language" },
-  { icon: Network, title: "Diagrams", body: "See how ideas connect.", image: "diagram", alt: "A flowchart generated from lecture notes" },
-  { icon: MessageCircleQuestion, title: "AI tutor", body: "Answers from your own pages.", image: "tutor", alt: "The tutor answering a student's question" },
-  { icon: Layers, title: "Flashcards", body: "Spaced repetition that sticks.", image: "flashcard", alt: "A flashcard question" },
-  { icon: Trophy, title: "Rated quizzes", body: "Know when you're ready.", image: "quiz", alt: "A multiple-choice quiz question" },
-  { icon: Youtube, title: "Videos & reading", body: "Hand-picked YouTube and reading.", image: "resources", alt: "A YouTube video suggestion" },
-  { icon: Headphones, title: "Podcast mode", body: "Two hosts explain it aloud.", image: "podcast", alt: "The audio lesson player with a live transcript" },
-  { icon: Mic, title: "Defence practice", body: "Answer out loud, get graded.", image: "defence", alt: "A tough examiner question" },
-];
-
 function Features() {
   return (
     <section id="features" className="py-20 md:py-24">
       <Reveal className="mx-auto max-w-xl px-4 text-center sm:px-6">
         <Eyebrow>Features</Eyebrow>
         <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Everything you need to study</h2>
-        <p className="mt-3 text-sm text-subtle md:hidden">Swipe to see more</p>
       </Reveal>
-      {/* Phones: one swipeable row. Tablets: 2 columns. Desktops: 4 columns. */}
-      <ul className="mx-auto mt-8 flex max-w-6xl snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-4 [scrollbar-width:none] sm:px-6 md:mt-12 md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-4 [&::-webkit-scrollbar]:hidden">
+      {/* Phones: cards glide along an arc. Tablets: 2 columns. Desktops: 4 columns. */}
+      <div className="mt-8">
+        <FeatureArc />
+      </div>
+      <ul className="mx-auto hidden max-w-6xl grid-cols-2 gap-4 px-6 md:mt-12 md:grid lg:grid-cols-4">
         {FEATURES.map((f, i) => (
-          <li key={f.title} className="w-[78%] shrink-0 snap-start min-[480px]:w-[58%] md:w-auto">
+          <li key={f.title}>
             <Reveal delay={(i % 4) * 0.06} className="h-full">
               <figure className="group h-full overflow-hidden rounded-2xl border border-line bg-canvas transition hover:-translate-y-1 hover:border-brand/30 hover:shadow-lg hover:shadow-ink/5">
                 <div className="relative aspect-[16/10] overflow-hidden border-b border-line bg-page">
@@ -197,7 +189,7 @@ function Features() {
                     src={`/showcase/${f.image}.webp`}
                     alt={f.alt}
                     fill
-                    sizes="(min-width: 1024px) 270px, (min-width: 768px) 45vw, 78vw"
+                    sizes="(min-width: 1024px) 270px, 45vw"
                     className="object-cover object-top transition duration-500 group-hover:scale-[1.03]"
                   />
                 </div>
@@ -251,12 +243,6 @@ function Grounded() {
   );
 }
 
-const STEPS: { icon: LucideIcon; title: string; body: string }[] = [
-  { icon: Upload, title: "Upload", body: "Slides or notes, PDF or PowerPoint." },
-  { icon: BookOpenText, title: "Learn", body: "Read, see, listen, ask." },
-  { icon: Trophy, title: "Practise", body: "Flashcards, quizzes, a final rating." },
-];
-
 function HowItWorks() {
   return (
     <section id="how-it-works" className="py-20 md:py-24">
@@ -265,25 +251,7 @@ function HowItWorks() {
           <Eyebrow>How it works</Eyebrow>
           <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">Three steps. About a minute.</h2>
         </Reveal>
-        <ol className="relative mt-10 grid grid-cols-3 gap-3 sm:gap-6 md:mt-14">
-          <span aria-hidden="true" className="absolute top-8 right-[16%] left-[16%] border-t-2 border-dashed border-line" />
-          {STEPS.map((step, i) => (
-            <li key={step.title}>
-              <Reveal delay={i * 0.12} className="relative flex flex-col items-center text-center">
-                <Float distance={5} duration={4 + i} delay={i * 0.4}>
-                  <span className="relative grid size-16 place-items-center rounded-2xl bg-brand text-white shadow-lg shadow-brand/25">
-                    <step.icon className="size-7" strokeWidth={1.8} aria-hidden="true" />
-                    <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full border-2 border-canvas bg-ink text-[11px] font-bold">
-                      {i + 1}
-                    </span>
-                  </span>
-                </Float>
-                <h3 className="mt-4 font-display font-semibold sm:mt-5 sm:text-xl">{step.title}</h3>
-                <p className="mt-1 text-xs text-subtle sm:text-base">{step.body}</p>
-              </Reveal>
-            </li>
-          ))}
-        </ol>
+        <StepsShowcase />
       </div>
     </section>
   );

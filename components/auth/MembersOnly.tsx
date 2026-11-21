@@ -1,24 +1,24 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { LoadingBlock } from "@/components/ui";
 import { useCurrentUser } from "./useCurrentUser";
 
 /**
- * App screens that need a real account (library, projects, flashcards, practice, progress).
- * Visitors without one, including free-trial guests, are sent to create an account first.
- * The server enforces the same rule; this just avoids flashing an empty screen.
+ * App screens that need a real account (library, projects, flashcards, practice, progress…).
+ * The page renders straight away and loads its data in parallel with the account check (waiting
+ * for the check first would add a full round trip to the server). If there's no account, or only
+ * a free-trial guest, the visitor is sent to create one. The server enforces the same rule.
  */
 export default function MembersOnly({ children }: { children: ReactNode }) {
   const user = useCurrentUser();
-  const allowed = !!user && !user.isGuest;
+  const denied = user === null || user?.isGuest === true;
 
   useEffect(() => {
-    if (user === undefined || allowed) return;
+    if (!denied) return;
     const next = window.location.pathname + window.location.search;
     window.location.replace(user?.isGuest ? `/signup?reason=trial&next=${encodeURIComponent(next)}` : `/signup?next=${encodeURIComponent(next)}`);
-  }, [user, allowed]);
+  }, [denied, user]);
 
-  if (!allowed) return <LoadingBlock label="Checking your account…" />;
+  if (denied) return null;
   return <>{children}</>;
 }

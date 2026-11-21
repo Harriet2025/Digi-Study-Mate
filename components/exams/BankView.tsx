@@ -3,6 +3,7 @@
 import {
   ArrowRight,
   BarChart3,
+  ClipboardList,
   FilePlus2,
   FileStack,
   Minus,
@@ -35,6 +36,14 @@ const TREND: Record<ExamTopic["trend"], { icon: LucideIcon; label: string }> = {
   new: { icon: Sparkles, label: "New" },
 };
 
+type View = "topics" | "predicted" | "mock" | "attempts";
+const VIEWS: { key: View; label: string; icon: LucideIcon }[] = [
+  { key: "topics", label: "Topics", icon: BarChart3 },
+  { key: "predicted", label: "Likely questions", icon: Sparkles },
+  { key: "mock", label: "Mock exam", icon: Timer },
+  { key: "attempts", label: "Attempts", icon: ClipboardList },
+];
+
 export default function BankView({ bankId }: { bankId: string }) {
   const router = useRouter();
   const [bank, setBank] = useState<BankDetail | null>(null);
@@ -43,6 +52,7 @@ export default function BankView({ bankId }: { bankId: string }) {
   const [mode, setMode] = useState<"exam" | "practice">("exam");
   const [count, setCount] = useState(10);
   const [minutes, setMinutes] = useState(30);
+  const [view, setView] = useState<View>("topics");
   const addRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -115,7 +125,7 @@ export default function BankView({ bankId }: { bankId: string }) {
             <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-brand uppercase">
               <FileStack className="size-4" aria-hidden="true" /> Past-paper bank
             </p>
-            <TypedHeading text={bank.course} className="mt-2 font-display text-3xl font-bold tracking-tight sm:text-5xl" />
+            <TypedHeading text={bank.course} className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-4xl" />
             <DrawLine className="mt-1 h-3 w-40 text-brand/30" />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -158,50 +168,38 @@ export default function BankView({ bankId }: { bankId: string }) {
 
       {bank.status === "ready" && (
         <>
-          {bank.overview && <p className="max-w-3xl text-lg text-subtle">{bank.overview}</p>}
+          {bank.overview && (
+            <details className="group max-w-3xl rounded-2xl border border-line bg-canvas px-4 py-3 text-sm">
+              <summary className="cursor-pointer list-none font-medium text-ink">
+                How these exams work <span className="text-subtle group-open:hidden">(tap to read)</span>
+              </summary>
+              <p className="mt-2 text-subtle">{bank.overview}</p>
+            </details>
+          )}
 
-          {/* Exam builder */}
-          <section className="relative overflow-hidden rounded-3xl bg-ink p-6 text-canvas sm:p-8">
-            <div aria-hidden="true" className="absolute -top-20 -right-16 size-72 rounded-full bg-brand/40 blur-3xl" />
-            <div className="relative grid grid-cols-1 items-end gap-6 lg:grid-cols-[1fr_auto]">
-              <div>
-                <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-brand-soft uppercase">
-                  <Timer className="size-4" aria-hidden="true" /> Practise like it&apos;s the real thing
-                </p>
-                <div className="mt-4 inline-flex rounded-full bg-canvas/10 p-1" role="radiogroup" aria-label="Type of test">
-                  {(["exam", "practice"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      role="radio"
-                      aria-checked={mode === m}
-                      onClick={() => setMode(m)}
-                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${mode === m ? "bg-canvas text-ink" : "text-canvas/80 hover:text-canvas"}`}
-                    >
-                      {m === "exam" ? "Timed mock exam" : "Practice test"}
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-3 text-sm text-canvas/70">
-                  {mode === "exam" ? "No hints. Marked at the end, with the topics that cost you the most marks." : "Check each answer as you go, with explanations."}
-                </p>
-                <div className="mt-5 grid max-w-md grid-cols-2 gap-4">
-                  <DarkSlider label="Questions" value={count} min={4} max={25} onChange={setCount} />
-                  <DarkSlider label="Minutes" value={minutes} min={5} max={120} step={5} onChange={setMinutes} />
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => startMock({ mode })}
-                disabled={starting !== null}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-canvas px-7 py-3.5 font-medium text-ink transition hover:bg-brand-soft disabled:opacity-60"
-              >
-                {starting === mode ? <Spinner className="size-4" /> : <Timer className="size-4" aria-hidden="true" />}
-                {mode === "exam" ? "Start mock exam" : "Start practice test"}
-              </button>
-            </div>
-          </section>
+          {/* One section at a time */}
+          <div className="sticky top-16 z-20 -mx-4 border-b border-line bg-page/90 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border">
+            <nav aria-label="Bank sections" className="flex gap-1 overflow-x-auto">
+              {VIEWS.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  onClick={() => setView(v.key)}
+                  aria-current={view === v.key ? "page" : undefined}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition ${
+                    view === v.key ? "bg-ink text-canvas" : "text-subtle hover:bg-muted hover:text-ink"
+                  }`}
+                >
+                  <v.icon className="size-4" aria-hidden="true" />
+                  {v.label}
+                  {v.key === "attempts" && bank.mocks.length > 0 && <span className="text-xs opacity-70">{bank.mocks.length}</span>}
+                </button>
+              ))}
+            </nav>
+          </div>
 
+          {view === "topics" && (
+            <>
           {/* Topics */}
           <section>
             <SectionTitle icon={BarChart3} title="Topics that keep coming up" />
@@ -255,6 +253,10 @@ export default function BankView({ bankId }: { bankId: string }) {
             </GrowGroup>
           </section>
 
+            </>
+          )}
+          {view === "predicted" && (
+            <>
           {/* Predicted questions */}
           <section>
             <SectionTitle icon={Sparkles} title="Likely to come out" />
@@ -286,6 +288,56 @@ export default function BankView({ bankId }: { bankId: string }) {
             </RevealGroup>
           </section>
 
+            </>
+          )}
+          {view === "mock" && (
+            <>
+          {/* Exam builder */}
+          <section className="relative overflow-hidden rounded-3xl bg-ink p-6 text-canvas sm:p-8">
+            <div aria-hidden="true" className="absolute -top-20 -right-16 size-72 rounded-full bg-brand/40 blur-3xl" />
+            <div className="relative grid grid-cols-1 items-end gap-6 lg:grid-cols-[1fr_auto]">
+              <div>
+                <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-brand-soft uppercase">
+                  <Timer className="size-4" aria-hidden="true" /> Practise like it&apos;s the real thing
+                </p>
+                <div className="mt-4 inline-flex rounded-full bg-canvas/10 p-1" role="radiogroup" aria-label="Type of test">
+                  {(["exam", "practice"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      role="radio"
+                      aria-checked={mode === m}
+                      onClick={() => setMode(m)}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition ${mode === m ? "bg-canvas text-ink" : "text-canvas/80 hover:text-canvas"}`}
+                    >
+                      {m === "exam" ? "Timed mock exam" : "Practice test"}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-canvas/70">
+                  {mode === "exam" ? "No hints. Marked at the end, with the topics that cost you the most marks." : "Check each answer as you go, with explanations."}
+                </p>
+                <div className="mt-5 grid max-w-md grid-cols-2 gap-4">
+                  <DarkSlider label="Questions" value={count} min={4} max={25} onChange={setCount} />
+                  <DarkSlider label="Minutes" value={minutes} min={5} max={120} step={5} onChange={setMinutes} />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => startMock({ mode })}
+                disabled={starting !== null}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-canvas px-7 py-3.5 font-medium text-ink transition hover:bg-brand-soft disabled:opacity-60"
+              >
+                {starting === mode ? <Spinner className="size-4" /> : <Timer className="size-4" aria-hidden="true" />}
+                {mode === "exam" ? "Start mock exam" : "Start practice test"}
+              </button>
+            </div>
+          </section>
+
+            </>
+          )}
+          {view === "attempts" && (
+            <>
           {bank.mocks.length > 0 && (
             <section>
               <SectionTitle icon={Timer} title="Your attempts" />
@@ -303,6 +355,9 @@ export default function BankView({ bankId }: { bankId: string }) {
                 ))}
               </ul>
             </section>
+          )}
+              {bank.mocks.length === 0 && <p className="text-subtle">No attempts yet. Start one from Mock exam.</p>}
+            </>
           )}
         </>
       )}

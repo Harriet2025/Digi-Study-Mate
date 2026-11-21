@@ -43,7 +43,7 @@ export default function ExamsHome() {
         icon={ClipboardCheck}
         eyebrow="Exam focus"
         title="Walk in knowing what's coming"
-        description="Upload past papers to find the topics that keep coming up, see likely questions, and sit timed mock exams."
+        description="Past papers in, patterns and mock exams out."
         actions={
           <Button onClick={openForm}>
             <Plus className="size-4" aria-hidden="true" /> Add past papers
@@ -52,15 +52,12 @@ export default function ExamsHome() {
         aside={
           <ol className="space-y-3">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="flex items-center gap-4 rounded-2xl border border-line bg-canvas/90 p-4 backdrop-blur">
+              <li key={s.title} className="flex items-center gap-3 rounded-2xl border border-line bg-canvas/90 px-4 py-3 backdrop-blur">
                 <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-white" aria-hidden="true">
                   <s.icon className="size-5" />
                 </span>
-                <span>
-                  <span className="block font-semibold">
-                    {i + 1}. {s.title}
-                  </span>
-                  <span className="block text-sm text-subtle">{s.body}</span>
+                <span className="font-semibold">
+                  {i + 1}. {s.title}
                 </span>
               </li>
             ))}

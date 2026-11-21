@@ -106,8 +106,11 @@ def _guide(client) -> str:
 def test_summary_sheet_and_pdf(client):
     gid = _guide(client)
     calls.clear()
+    assert client.get(f"/api/guides/{gid}/summary.pdf").status_code == 409  # not written yet
+    first = client.get(f"/api/guides/{gid}/summary")
+    assert first.status_code == 202 and first.json() == {"status": "processing"}  # written in the background
     sheet = client.get(f"/api/guides/{gid}/summary").json()
-    assert sheet["bigIdea"].startswith("Cells") and sheet["keyTerms"][0]["term"] == "ATP"
+    assert sheet["status"] == "ready" and sheet["bigIdea"].startswith("Cells") and sheet["keyTerms"][0]["term"] == "ATP"
     client.get(f"/api/guides/{gid}/summary")
     assert calls.count("summary_sheet") == 1  # made once, then kept
 

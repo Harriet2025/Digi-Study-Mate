@@ -1,5 +1,6 @@
 "use client";
 
+import DownloadButton from "@/components/DownloadButton";
 import { useState } from "react";
 import { Icons, LinkButton } from "@/components/ui";
 
@@ -40,16 +41,13 @@ export default function LessonToolbar({
         <span>Flashcards{flashcardCount ? ` (${flashcardCount})` : ""}</span>
       </LinkButton>
       {downloadUrl && (
-        <a
-          href={downloadUrl}
-          download
-          className="inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-5 py-2.5 text-sm font-medium transition hover:border-brand/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+        <DownloadButton
+          url={downloadUrl}
+          filename={`${title}.mp3`}
+          className="inline-flex items-center gap-2 rounded-full border border-line bg-canvas px-5 py-2.5 text-sm font-medium transition hover:border-brand/50 hover:bg-muted focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none disabled:opacity-70"
         >
-          <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 4v12m0 0-4-4m4 4 4-4M5 20h14" />
-          </svg>
           Download MP3
-        </a>
+        </DownloadButton>
       )}
       <button
         type="button"

@@ -320,6 +320,7 @@ export interface ProjectDetail extends ProjectSummary {
 // --- Exam focus ----------------------------------------------------------------
 
 export interface SummarySheet {
+  status: "ready";
   guideId: string;
   title: string;
   pages: string | null;
@@ -582,7 +583,8 @@ export const api = {
   deleteProject: (id: string) => request<void>(`/api/projects/${id}`, { method: "DELETE" }),
   practiceProject: (id: string) => request<{ setId: string }>(`/api/projects/${id}/practice`, { method: "POST" }),
 
-  summary: (guideId: string) => request<SummarySheet>(`/api/guides/${guideId}/summary`),
+  /** Returns {status: "processing"} while the sheet is being written; poll until it's ready. */
+  summary: (guideId: string) => request<SummarySheet | { status: "processing" }>(`/api/guides/${guideId}/summary`),
   summaryPdfUrl: (guideId: string) => `/api/guides/${guideId}/summary.pdf`,
 
   banks: () => request<BankSummary[]>("/api/exams/banks"),

@@ -29,7 +29,7 @@ export default function AppHero({
       <Parallax speed={0.25} className="pointer-events-none absolute -top-24 -right-16 size-72 rounded-full bg-brand-soft blur-2xl" />
       <Parallax speed={-0.15} className="pointer-events-none absolute -bottom-28 left-1/3 size-56 rounded-full bg-brand-soft/70 blur-3xl" />
 
-      <div className={`relative grid grid-cols-1 gap-8 p-6 sm:p-10 ${aside ? "lg:grid-cols-[1.2fr_1fr] lg:items-center" : ""}`}>
+      <div className={`relative grid grid-cols-1 gap-6 p-5 sm:p-8 ${aside ? "lg:grid-cols-[1.2fr_1fr] lg:items-center" : ""}`}>
         <div>
           <p className="flex items-center gap-2.5 text-xs font-semibold tracking-[0.18em] text-brand uppercase">
             <span className="grid size-8 place-items-center rounded-lg bg-brand text-white" aria-hidden="true">
@@ -37,10 +37,10 @@ export default function AppHero({
             </span>
             {eyebrow}
           </p>
-          <TypedHeading text={title} className="mt-5 font-display text-3xl leading-tight font-bold tracking-tight text-balance sm:text-5xl" />
+          <TypedHeading text={title} className="mt-4 font-display text-2xl leading-tight font-bold tracking-tight text-balance sm:text-4xl" />
           <DrawLine className="mt-2 h-3 w-40 text-brand/30 sm:w-56" />
-          {description && <p className="mt-3 max-w-xl text-subtle sm:text-lg">{description}</p>}
-          {actions && <div className="mt-6 flex flex-wrap gap-3">{actions}</div>}
+          {description && <p className="mt-2 max-w-xl text-sm text-subtle sm:text-base">{description}</p>}
+          {actions && <div className="mt-5 flex flex-wrap gap-3">{actions}</div>}
         </div>
         {aside}
       </div>

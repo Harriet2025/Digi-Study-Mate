@@ -2,17 +2,22 @@
 
 import html
 import io
+import logging
+import time
 
 import pymupdf
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from ..ai.groq import groq_json
 from ..ai.script import LANGUAGES
+from ..db import get_engine
 from ..errors import AppError
 from ..guides.service import get_guide, lesson_text
 from ..models import StudyGuide
 from .prompts import SUMMARY_SYSTEM_PROMPT
+
+logger = logging.getLogger("study_mate.summary")
 
 
 class _Strict(BaseModel):
@@ -43,14 +48,66 @@ class _Sheet(_Strict):
     quickCheck: list[_QA]
 
 
-def get_summary(db: Session, guide_id: str) -> dict:
-    """The study space's summary sheet, made on first request."""
+#: If a sheet has been "in progress" this long, the job died (e.g. a restart); start again.
+STALE_SECONDS = 240
+
+
+def summary_status(db: Session, guide_id: str) -> tuple[str, dict | None]:
+    """("ready", sheet) | ("processing", None) | ("failed", {"error": ...}) | ("missing", None)."""
     guide = get_guide(db, guide_id)
     if guide.status != "ready":
         raise AppError("NOT_READY", 409, "This lesson isn't ready yet.")
-    if guide.summary:
-        return _with_meta(guide)
+    s = guide.summary or {}
+    if s.get("_status") == "processing":
+        if time.time() - s.get("started", 0) < STALE_SECONDS:
+            return "processing", None
+        return "missing", None
+    if s.get("_status") == "failed":
+        return "failed", {"error": s.get("error") or "The summary couldn't be written."}
+    if s.get("bigIdea"):
+        return "ready", _with_meta(guide)
+    return "missing", None
 
+
+def mark_summary_started(db: Session, guide_id: str) -> None:
+    guide = get_guide(db, guide_id)
+    guide.summary = {"_status": "processing", "started": time.time()}
+    db.commit()
+
+
+def run_summary_job(guide_id: str) -> None:
+    """Writes the sheet in the background (about 20 to 45 seconds), so no request has to wait for the AI."""
+    db = sessionmaker(bind=get_engine(), expire_on_commit=False)()
+    try:
+        guide = db.get(StudyGuide, guide_id)
+        if guide is None:
+            return
+        guide.summary = _write_sheet(guide)
+        db.commit()
+    except Exception as err:
+        logger.exception("summary job %s failed", guide_id)
+        db.rollback()
+        guide = db.get(StudyGuide, guide_id)
+        if guide is not None:
+            message = err.message if isinstance(err, AppError) else "The summary couldn't be written. Please try again."
+            guide.summary = {"_status": "failed", "error": message[:300]}
+            db.commit()
+    finally:
+        db.close()
+
+
+def get_summary(db: Session, guide_id: str) -> dict:
+    """The sheet, writing it now if needed (used by tests and the PDF when the sheet already exists)."""
+    status, data = summary_status(db, guide_id)
+    if status == "ready":
+        return data
+    guide = get_guide(db, guide_id)
+    guide.summary = _write_sheet(guide)
+    db.commit()
+    return _with_meta(guide)
+
+
+def _write_sheet(guide: StudyGuide) -> dict:
     language = LANGUAGES.get(guide.language, "English")
     sheet = groq_json(
         SUMMARY_SYSTEM_PROMPT,
@@ -68,9 +125,7 @@ def get_summary(db: Session, guide_id: str) -> dict:
     data["rules"] = data["rules"][:5]
     data["mistakes"] = data["mistakes"][:4]
     data["quickCheck"] = data["quickCheck"][:5]
-    guide.summary = data
-    db.commit()
-    return _with_meta(guide)
+    return data
 
 
 def _with_meta(guide: StudyGuide) -> dict:

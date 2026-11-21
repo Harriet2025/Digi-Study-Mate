@@ -10,9 +10,9 @@ export default async function UploadPage({ searchParams }: { searchParams: Promi
       <PageHeader
         eyebrow="New lesson"
         title="Turn your notes into a study space"
-        description="Upload your slides or notes and we'll take you through them step by step, with diagrams, a tutor to answer your questions, flashcards, a rated quiz and extra resources."
+        description="PDF or PowerPoint. We'll take you through it step by step."
       />
-      <div className="mt-10">
+      <div className="mt-8">
         <UploadFlow initialDocumentId={typeof documentId === "string" ? documentId : undefined} />
       </div>
     </Page>

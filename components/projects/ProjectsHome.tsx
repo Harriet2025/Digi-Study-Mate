@@ -54,7 +54,7 @@ export default function ProjectsHome() {
         icon={Presentation}
         eyebrow="Projects & presentations"
         title="Prepare to present"
-        description="A draft structure to build on and practice for the questions you'll face. The ideas stay yours."
+        description="A draft to build on, and practice for the questions. The ideas stay yours."
         actions={
           <Button onClick={openForm}>
             <Plus className="size-4" aria-hidden="true" /> New project
@@ -64,15 +64,12 @@ export default function ProjectsHome() {
           <ol className="relative space-y-3">
             <span aria-hidden="true" className="absolute top-6 bottom-6 left-[1.6rem] border-l-2 border-dashed border-line" />
             {STEPS.map((s, i) => (
-              <li key={s.title} className="relative flex items-center gap-4 rounded-2xl border border-line bg-canvas/90 p-4 backdrop-blur">
+              <li key={s.title} className="relative flex items-center gap-3 rounded-2xl border border-line bg-canvas/90 px-4 py-3 backdrop-blur">
                 <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-white" aria-hidden="true">
                   <s.icon className="size-5" />
                 </span>
-                <span>
-                  <span className="block font-semibold">
-                    {i + 1}. {s.title}
-                  </span>
-                  <span className="block text-sm text-subtle">{s.body}</span>
+                <span className="font-semibold">
+                  {i + 1}. {s.title}
                 </span>
               </li>
             ))}

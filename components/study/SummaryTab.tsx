@@ -1,6 +1,7 @@
 "use client";
 
-import { AlertTriangle, Download, FileText, Lightbulb, ListChecks, Printer, Timer, type LucideIcon } from "lucide-react";
+import DownloadButton from "@/components/DownloadButton";
+import { AlertTriangle, FileText, Lightbulb, ListChecks, Printer, Timer, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, type GuideDetail, type SummarySheet } from "@/lib/api";
@@ -13,12 +14,26 @@ export default function SummaryTab({ guide }: { guide: GuideDetail }) {
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
 
+  // The first visit starts writing the sheet on the server; check back every few seconds.
   const load = useCallback(() => {
     setError(null);
-    api
-      .summary(guide.guideId)
-      .then(setSheet)
-      .catch((err) => setError(err instanceof ApiError ? err.message : "Couldn't make your summary sheet."));
+    let stop = false;
+    let timer = 0;
+    const check = async () => {
+      try {
+        const res = await api.summary(guide.guideId);
+        if (stop) return;
+        if (res.status === "ready") setSheet(res);
+        else timer = window.setTimeout(check, 3000);
+      } catch (err) {
+        if (!stop) setError(err instanceof ApiError ? err.message : "Couldn't make your summary sheet.");
+      }
+    };
+    check();
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+    };
   }, [guide.guideId]);
   useEffect(load, [load]);
 
@@ -49,12 +64,13 @@ export default function SummaryTab({ guide }: { guide: GuideDetail }) {
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <p className="text-subtle">Everything that matters from this lesson, on one page.</p>
         <div className="flex flex-wrap gap-2">
-          <a
-            href={api.summaryPdfUrl(guide.guideId)}
-            className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-deep"
+          <DownloadButton
+            url={api.summaryPdfUrl(guide.guideId)}
+            filename={`${guide.title} - revision sheet.pdf`}
+            className="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-deep disabled:opacity-70"
           >
-            <Download className="size-4" aria-hidden="true" /> Download PDF
-          </a>
+            Download PDF
+          </DownloadButton>
           <Button variant="secondary" onClick={() => window.print()}>
             <Printer className="size-4" aria-hidden="true" /> Print
           </Button>

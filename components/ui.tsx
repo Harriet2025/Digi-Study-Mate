@@ -18,8 +18,8 @@ export function PageHeader({
     <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-2xl">
         {eyebrow && <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">{eyebrow}</p>}
-        <h1 className="mt-2 font-display text-4xl leading-tight font-semibold text-balance sm:text-5xl">{title}</h1>
-        {description && <p className="mt-3 text-lg leading-relaxed text-subtle">{description}</p>}
+        <h1 className="mt-2 font-display text-3xl leading-tight font-bold tracking-tight text-balance sm:text-4xl">{title}</h1>
+        {description && <p className="mt-2 leading-relaxed text-subtle">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap gap-3">{actions}</div>}
     </div>
@@ -129,10 +129,31 @@ export function EmptyState({ icon, title, children, action }: { icon?: ReactNode
   );
 }
 
+/** Placeholder shapes in the layout of a typical screen: feels faster than a spinner. */
 export function LoadingBlock({ label = "Loading…" }: { label?: string }) {
+  const bar = "rounded-xl bg-muted motion-safe:animate-pulse";
   return (
-    <div className="flex items-center justify-center gap-3 py-20 text-subtle" role="status">
-      <Spinner /> {label}
+    <div role="status" aria-live="polite" className="space-y-6 py-2">
+      <span className="sr-only">{label}</span>
+      <div className="rounded-3xl border border-line bg-canvas p-6">
+        <div className={`h-3 w-28 ${bar}`} />
+        <div className={`mt-4 h-7 w-2/3 ${bar}`} />
+        <div className={`mt-3 h-3 w-1/2 ${bar}`} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="rounded-2xl border border-line bg-canvas p-4">
+            <div className={`size-8 ${bar}`} />
+            <div className={`mt-3 h-6 w-12 ${bar}`} />
+            <div className={`mt-2 h-3 w-20 ${bar}`} />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-2xl border border-line bg-canvas p-5">
+        <div className={`h-4 w-1/3 ${bar}`} />
+        <div className={`mt-3 h-3 w-full ${bar}`} />
+        <div className={`mt-2 h-3 w-5/6 ${bar}`} />
+      </div>
     </div>
   );
 }

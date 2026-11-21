@@ -1,3 +1,4 @@
+import re
 from typing import Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
@@ -10,7 +11,8 @@ from ..auth.deps import guest_limit
 from ..auth.scoping import as_current_user
 from ..config import get_settings
 from ..db import get_db
-from ..exams.summary import get_summary, render_summary_pdf
+from ..errors import AppError
+from ..exams.summary import mark_summary_started, render_summary_pdf, run_summary_job, summary_status
 from ..flashcards.service import card_json, deck_stats, list_cards
 from ..models import ChatMessage, StudyGuide
 from ..guides.service import (
@@ -105,16 +107,26 @@ async def remake_practice(guide_id: str, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/{guide_id}/summary")
-async def summary(guide_id: str, db: Session = Depends(get_db)) -> dict:
-    """The one-page revision sheet (made with AI on first request, then kept)."""
-    return await run_in_threadpool(get_summary, db, guide_id)
+def summary(guide_id: str, background: BackgroundTasks, response: Response, db: Session = Depends(get_db)) -> dict:
+    """The one-page revision sheet. The first request starts writing it in the background and returns
+    202 {"status": "processing"}; poll until it returns the sheet (200)."""
+    status, data = summary_status(db, guide_id)
+    if status == "ready":
+        return {"status": "ready", **data}
+    if status in ("failed", "missing"):  # a failed sheet is retried on the next request
+        mark_summary_started(db, guide_id)
+        background.add_task(as_current_user(run_summary_job), guide_id)
+    response.status_code = 202
+    return {"status": "processing"}
 
 
 @router.get("/{guide_id}/summary.pdf")
-async def summary_pdf(guide_id: str, db: Session = Depends(get_db)) -> Response:
-    sheet = await run_in_threadpool(get_summary, db, guide_id)
-    pdf = await run_in_threadpool(render_summary_pdf, sheet)
-    name = "".join(c for c in sheet["title"] if c.isalnum() or c in " -_")[:60].strip() or "summary"
+def summary_pdf(guide_id: str, db: Session = Depends(get_db)) -> Response:
+    status, sheet = summary_status(db, guide_id)
+    if status != "ready":
+        raise AppError("NOT_READY", 409, "Your revision sheet is still being written. Try again in a moment.")
+    pdf = render_summary_pdf(sheet)
+    name = re.sub(r"\s+", " ", re.sub(r"[^\w\s-]", " ", sheet["title"])).strip()[:60] or "summary"
     return Response(content=pdf, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{name} - revision sheet.pdf"'})
 
 

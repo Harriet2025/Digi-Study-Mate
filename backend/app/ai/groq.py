@@ -166,6 +166,32 @@ def groq_json(system: str, user: str, model: type[M], *, name: str, max_tokens: 
         raise AppError("INVALID_OUTPUT", 502, "The AI's response was incomplete. Please try again.", detail=repr(err)) from err
 
 
+def groq_read_image(jpeg: bytes, prompt: str, *, max_tokens: int = 2_500) -> str:
+    """Reads one image (e.g. a photo of a slide) with the vision model and returns its text."""
+    import base64
+
+    body = {
+        "model": get_settings().groq_vision_model,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt + SPELLING_NOTE},
+                    {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64," + base64.b64encode(jpeg).decode()}},
+                ],
+            }
+        ],
+        "max_completion_tokens": max_tokens,
+    }
+    data = with_retry(lambda: _post("/chat/completions", json=body)).json()
+    choice = (data.get("choices") or [None])[0]
+    text = ((choice or {}).get("message") or {}).get("content") or ""
+    # Some models think out loud first; keep only the answer.
+    if "</think>" in text:
+        text = text.split("</think>", 1)[1]
+    return text.strip()
+
+
 def groq_transcribe(audio: bytes, filename: str, *, prompt: str | None = None) -> str:
     """Speech to text with Groq Whisper."""
     data = {"model": get_settings().groq_whisper_model, "response_format": "json"}

@@ -4,7 +4,7 @@ import { BadgeCheck, Mic, Target } from "lucide-react";
 import AppHero from "@/components/app/AppHero";
 import { Page } from "@/components/ui";
 
-export const metadata = { title: "Defence practice · Study Mate" };
+export const metadata = { title: "Question practice · Study Mate" };
 
 export default async function PracticePage({
   searchParams,
@@ -17,7 +17,7 @@ export default async function PracticePage({
       <Page>
         <AppHero
           icon={Mic}
-          eyebrow="Defence practice"
+          eyebrow="Question practice"
           title="Face the toughest questions before the panel does"
           description="Five hard questions from your own material."
           aside={

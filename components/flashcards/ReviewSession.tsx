@@ -202,7 +202,7 @@ export default function ReviewSession({
           type="button"
           onClick={() => setFlipped((f) => !f)}
           aria-label={flipped ? "Show question" : "Show answer"}
-          className="relative block min-h-72 w-full text-left transition-transform duration-500 [transform-style:preserve-3d] motion-reduce:transition-none focus-visible:outline-none"
+          className="relative grid min-h-72 w-full text-left transition-transform duration-500 [transform-style:preserve-3d] motion-reduce:transition-none focus-visible:outline-none"
           style={{ transform: flipped ? "rotateY(180deg)" : undefined }}
         >
           <CardFace label="Question" card={card}>
@@ -228,7 +228,10 @@ export default function ReviewSession({
           </Button>
         ) : (
           <div>
-            <p className="mb-3 text-center text-sm text-subtle">How well did you know it?</p>
+            <Button onClick={() => rate("good")} disabled={busy} className="mb-4 w-full py-3.5 text-base">
+              Next card <span aria-hidden="true">→</span>
+            </Button>
+            <p className="mb-3 text-center text-sm text-subtle">Or say how well you knew it (it decides when you see this card again):</p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {RATING_BUTTONS.map((b) => (
                 <button
@@ -255,7 +258,7 @@ export default function ReviewSession({
 function CardFace({ label, card, back = false, children }: { label: string; card: Flashcard; back?: boolean; children: React.ReactNode }) {
   return (
     <div
-      className={`absolute inset-0 flex flex-col rounded-2xl border p-7 shadow-[0_20px_60px_-30px_rgba(41,37,36,0.5)] [backface-visibility:hidden] sm:p-10 ${
+      className={`flex flex-col rounded-2xl border p-6 shadow-[0_20px_60px_-30px_rgba(41,37,36,0.5)] [grid-area:1/1] [backface-visibility:hidden] sm:p-10 ${
         back ? "border-ink bg-ink text-canvas [transform:rotateY(180deg)]" : "border-line bg-canvas"
       }`}
     >
@@ -266,7 +269,13 @@ function CardFace({ label, card, back = false, children }: { label: string; card
         {card.source === "checkpoint" && !back && <Pill tone="brand">From a checkpoint</Pill>}
         {card.lapses > 0 && back && <Pill tone="warning">Missed {card.lapses}×</Pill>}
       </div>
-      <p className="my-auto py-6 font-display text-2xl leading-snug text-balance sm:text-3xl">{children}</p>
+      <p
+        className={`my-auto py-5 font-display leading-snug break-words ${
+          String(children).length > 160 ? "text-lg sm:text-xl" : String(children).length > 80 ? "text-xl sm:text-2xl" : "text-2xl text-balance sm:text-3xl"
+        }`}
+      >
+        {children}
+      </p>
       {!back && card.lessonTitle && <p className="truncate text-xs text-subtle">{card.lessonTitle}</p>}
       {!back && <p className="mt-1 text-xs text-subtle">Tap the card to flip it</p>}
     </div>

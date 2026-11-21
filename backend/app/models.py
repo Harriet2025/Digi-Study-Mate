@@ -101,7 +101,7 @@ class Document(OwnedMixin, TimestampMixin, Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     mime_type: Mapped[str] = mapped_column(String(127), nullable=False)
-    source_type: Mapped[str] = mapped_column(Enum("pdf", "pptx", name="source_type"), nullable=False)
+    source_type: Mapped[str] = mapped_column(Enum("pdf", "pptx", "images", name="source_type"), nullable=False)
     byte_size: Mapped[int] = mapped_column(Integer, nullable=False)
     page_count: Mapped[int] = mapped_column(Integer, nullable=False)
     chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -470,6 +470,8 @@ class Project(OwnedMixin, TimestampMixin, Base):
     deck: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     #: Generated defense pack: presenter script, strategy, likely questions with model answers.
     defense: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    #: Slide-by-slide explanation so the student understands and can defend everything (see projects/service.py).
+    walkthrough: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     #: Path of the .pptx under MEDIA_DIR.
     pptx_path: Mapped[str | None] = mapped_column(String(255))
     #: Practice set made from the deck (created on demand).

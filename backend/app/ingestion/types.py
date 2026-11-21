@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Literal
 
-SourceType = Literal["pdf", "pptx"]
+SourceType = Literal["pdf", "pptx", "images"]
 
 
 @dataclass

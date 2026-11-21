@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 const POINTS = [
   ["Lessons that click", "Your slides, explained step by step with diagrams and examples."],
   ["Practice that sticks", "Flashcards, rated quizzes and a tutor that cites your pages."],
-  ["Ready to present", "A draft structure and defence practice for every project."],
+  ["Ready to present", "Slides, a script and a full walkthrough from just your topic."],
 ];
 
 /** Two-column frame for the login and sign-up pages. */

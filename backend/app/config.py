@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-120b"
     groq_whisper_model: str = "whisper-large-v3-turbo"
+    #: Reads photos of slides and notes (must accept image input).
+    groq_vision_model: str = "qwen/qwen3.8-27b"
     #: Your Groq plan's tokens-per-minute limit for the model (free tier: 8000). 0 = don't limit requests.
     groq_tpm_limit: int = 8_000
 

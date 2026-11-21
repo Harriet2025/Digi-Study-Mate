@@ -15,9 +15,8 @@ export default function SiteFooter() {
           <p className="col-span-2 mb-1 text-xs font-semibold tracking-[0.16em] text-brand-deep uppercase">Explore</p>
           <Link href="/#how-it-works" className="text-subtle hover:text-ink">How it works</Link>
           <Link href="/#features" className="text-subtle hover:text-ink">Features</Link>
-          <Link href="/#projects" className="text-subtle hover:text-ink">Projects</Link>
+          <Link href="/#projects" className="text-subtle hover:text-ink">Presentations</Link>
           <Link href="/#pricing" className="text-subtle hover:text-ink">Pricing</Link>
-          <Link href="/practice" className="text-subtle hover:text-ink">Defence practice</Link>
           <Link href="/listen/demo" className="text-subtle hover:text-ink">Demo episode</Link>
         </nav>
       </div>

@@ -22,9 +22,9 @@ import { api, ApiError, timeAgo, type ProjectSummary } from "@/lib/api";
 import { Button, ErrorNote, LoadingBlock, ProgressBar, Spinner } from "@/components/ui";
 
 const STEPS: { icon: LucideIcon; title: string; body: string }[] = [
-  { icon: FileUp, title: "Share the brief", body: "Upload it or describe the task." },
-  { icon: Presentation, title: "Get a draft", body: "Slide structure and speaking notes to adapt." },
-  { icon: Mic, title: "Practise", body: "Likely questions, then a strict examiner." },
+  { icon: FileUp, title: "Your topic", body: "Plus any notes, files or photos." },
+  { icon: Presentation, title: "Slides and script", body: "A PowerPoint and what to say." },
+  { icon: Mic, title: "Understand and defend", body: "Every slide explained, likely questions answered." },
 ];
 
 export default function ProjectsHome() {
@@ -52,12 +52,12 @@ export default function ProjectsHome() {
     <div className="space-y-12">
       <AppHero
         icon={Presentation}
-        eyebrow="Projects & presentations"
-        title="Prepare to present"
-        description="A draft to build on, and practice for the questions. The ideas stay yours."
+        eyebrow="Presentation coach"
+        title="Get ready to present"
+        description="Give us your topic. Get the slides, what to say, and how to defend it."
         actions={
           <Button onClick={openForm}>
-            <Plus className="size-4" aria-hidden="true" /> New project
+            <Plus className="size-4" aria-hidden="true" /> New presentation
           </Button>
         }
         aside={
@@ -82,7 +82,7 @@ export default function ProjectsHome() {
           <span className="grid size-9 place-items-center rounded-lg bg-brand-soft text-brand" aria-hidden="true">
             <Layers className="size-4.5" />
           </span>
-          Your projects
+          Your presentations
           {projects && projects.length > 0 && (
             <span className="rounded-full bg-muted px-2.5 py-0.5 font-sans text-sm font-medium text-subtle">{projects.length}</span>
           )}
@@ -110,7 +110,7 @@ export default function ProjectsHome() {
                   <span className="grid size-12 place-items-center rounded-full bg-brand-soft text-brand transition group-hover:scale-110">
                     <Plus className="size-5" aria-hidden="true" />
                   </span>
-                  <span className="font-semibold">Start a new project</span>
+                  <span className="font-semibold">Start a new presentation</span>
                 </button>
               </div>
             )}
@@ -174,7 +174,7 @@ function ProjectCard({ project: p }: { project: ProjectSummary }) {
 function NewProjectForm({ onClose }: { onClose?: () => void }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [title, setTitle] = useState("");
   const [course, setCourse] = useState("");
   const [instructions, setInstructions] = useState("");
@@ -183,30 +183,18 @@ function NewProjectForm({ onClose }: { onClose?: () => void }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const pickFile = (f: File | undefined) => {
+  const pickFiles = (list: FileList | null) => {
     setError(null);
-    if (!f) return;
-    const ext = f.name.split(".").pop()?.toLowerCase();
-    if (!["pdf", "docx", "pptx", "txt", "md"].includes(ext ?? "")) {
-      setError("Upload the brief as PDF, Word (.docx), PowerPoint (.pptx) or a text file.");
-      return;
-    }
-    if (f.size > 25 * 1024 * 1024) {
-      setError("That file is larger than 25 MB.");
-      return;
-    }
-    setFile(f);
-    if (!title) setTitle(f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "));
+    if (!list) return;
+    const ok = [...list].filter((f) => /\.(pdf|docx|pptx|txt|md|jpe?g|png|webp)$/i.test(f.name) && f.size <= 25 * 1024 * 1024);
+    if (ok.length < list.length) setError("Some files were skipped: use PDF, Word, PowerPoint, text or photos under 25 MB.");
+    setFiles((prev) => [...prev, ...ok].slice(0, 6));
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
-      setError("Give your presentation a working title.");
-      return;
-    }
-    if (!file && instructions.trim().length < 20) {
-      setError("Upload the brief, or describe what the presentation must cover (at least a sentence or two).");
+      setError("What's your presentation about? Add the topic.");
       return;
     }
     setSubmitting(true);
@@ -217,12 +205,12 @@ function NewProjectForm({ onClose }: { onClose?: () => void }) {
     form.append("instructions", instructions.trim());
     form.append("slideCount", String(slideCount));
     form.append("durationMinutes", String(duration));
-    if (file) form.append("brief", file);
+    files.forEach((f) => form.append("resources", f));
     try {
       const project = await api.createProject(form);
       router.push(`/projects/${project.projectId}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't start your project. Please try again.");
+      setError(err instanceof ApiError ? err.message : "Couldn't start your presentation. Please try again.");
       setSubmitting(false);
     }
   };
@@ -233,8 +221,8 @@ function NewProjectForm({ onClose }: { onClose?: () => void }) {
     <section className="overflow-hidden rounded-3xl border border-line bg-canvas">
       <div className="flex items-center justify-between gap-4 border-b border-line px-6 py-5 sm:px-8">
         <div>
-          <p className="text-xs font-semibold tracking-[0.18em] text-brand uppercase">New project</p>
-          <h2 className="mt-1 font-display text-2xl font-bold">What do you need to present?</h2>
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand uppercase">New presentation</p>
+          <h2 className="mt-1 font-display text-2xl font-bold">Tell us about your presentation</h2>
         </div>
         {onClose && (
           <button type="button" onClick={onClose} aria-label="Close" className="grid size-10 place-items-center rounded-full text-subtle hover:bg-muted hover:text-ink">
@@ -245,43 +233,12 @@ function NewProjectForm({ onClose }: { onClose?: () => void }) {
 
       <form onSubmit={submit} className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-5 p-6 sm:p-8">
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              pickFile(e.dataTransfer.files[0]);
-            }}
-            className="flex w-full items-center gap-4 rounded-2xl border-2 border-dashed border-line bg-page px-5 py-5 text-left transition hover:border-brand/50"
-          >
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand text-white" aria-hidden="true">
-              {file ? <FileText className="size-5" /> : <FileUp className="size-5" />}
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate font-medium">{file ? file.name : "Drop or choose the brief"}</span>
-              <span className="text-sm text-subtle">{file ? "Click to change" : "PDF, Word, PowerPoint or text. Optional if you describe it below."}</span>
-            </span>
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf,.docx,.pptx,.txt,.md"
-            className="sr-only"
-            onChange={(e) => {
-              pickFile(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <TextField id="title" label="Presentation title" value={title} onChange={setTitle} placeholder="e.g. Smart library system" />
-            <TextField id="course" label="Course (optional)" value={course} onChange={setCourse} placeholder="e.g. BCP 202" />
-          </div>
+          <TextField id="title" label="What's your presentation about?" value={title} onChange={setTitle} placeholder="e.g. Renewable energy in Ghana" />
+          <TextField id="course" label="Course (optional)" value={course} onChange={setCourse} placeholder="e.g. BCP 202" />
 
           <div>
             <label htmlFor="instructions" className="mb-2 block text-sm font-semibold">
-              Anything else we should know? <span className="font-normal text-subtle">(optional with a brief)</span>
+              Points to cover or your own notes <span className="font-normal text-subtle">(optional)</span>
             </label>
             <textarea
               id="instructions"
@@ -289,9 +246,58 @@ function NewProjectForm({ onClose }: { onClose?: () => void }) {
               onChange={(e) => setInstructions(e.target.value)}
               rows={4}
               maxLength={12000}
-              placeholder="Your topic and angle, the marking criteria, your group members' parts…"
+              placeholder="What you want to say, your findings, the marking criteria, your group members' parts…"
               className="w-full resize-y rounded-2xl border border-line bg-white px-4 py-3 focus:border-brand focus:ring-2 focus:ring-brand/30 focus:outline-none"
             />
+          </div>
+
+          <div>
+            <span className="mb-2 block text-sm font-semibold">
+              Files <span className="font-normal text-subtle">(optional: brief, notes, articles or photos, up to 6)</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                pickFiles(e.dataTransfer.files);
+              }}
+              className="flex w-full items-center gap-4 rounded-2xl border-2 border-dashed border-line bg-page px-5 py-4 text-left transition hover:border-brand/50"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand text-white" aria-hidden="true">
+                <FileUp className="size-5" />
+              </span>
+              <span className="text-sm text-subtle">PDF, Word, PowerPoint, text, or photos of slides and notes</span>
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              accept=".pdf,.docx,.pptx,.txt,.md,image/*"
+              className="sr-only"
+              onChange={(e) => {
+                pickFiles(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            {files.length > 0 && (
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {files.map((f, i) => (
+                  <li key={`${f.name}-${i}`} className="flex items-center gap-1.5 rounded-full bg-muted py-1 pr-1.5 pl-3 text-sm">
+                    <span className="max-w-48 truncate">{f.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                      aria-label={`Remove ${f.name}`}
+                      className="grid size-6 place-items-center rounded-full hover:bg-line"
+                    >
+                      <X className="size-3.5" aria-hidden="true" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
@@ -310,9 +316,9 @@ function NewProjectForm({ onClose }: { onClose?: () => void }) {
             {error && <ErrorNote>{error}</ErrorNote>}
             <Button type="submit" disabled={submitting} className="w-full py-3.5 text-base">
               {submitting ? <Spinner className="size-4" /> : <Sparkles className="size-4" aria-hidden="true" />}
-              {submitting ? "Starting…" : "Create my draft and practice pack"}
+              {submitting ? "Starting…" : "Build my presentation"}
             </Button>
-            <p className="text-center text-xs text-subtle">A draft to edit and make your own. Check your course&apos;s rules on AI help.</p>
+            <p className="text-center text-xs text-subtle">Slides, a script, a full walkthrough and likely questions. Check your course&apos;s rules on AI help.</p>
           </div>
         </div>
       </form>

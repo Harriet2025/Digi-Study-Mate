@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api, ApiError, timeAgo, type LibraryData, type QuestionSetSummary } from "@/lib/api";
+import { api, ApiError, timeAgo, unitOf, type LibraryData, type QuestionSetSummary } from "@/lib/api";
 import { Button, Card, EmptyState, ErrorNote, Icons, LinkButton, LoadingBlock, Spinner } from "@/components/ui";
 
 const SUGGESTED_PAGES = 10;
@@ -109,7 +109,7 @@ function NewSetForm({
   const [pageEnd, setPageEnd] = useState(initialPageEnd ?? Math.min(doc.pageCount, SUGGESTED_PAGES));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const unit = doc.sourceType === "pptx" ? "slide" : "page";
+  const unit = unitOf(doc.sourceType);
   const valid = pageStart >= 1 && pageEnd >= pageStart && pageEnd <= doc.pageCount;
 
   const changeDoc = (id: string) => {

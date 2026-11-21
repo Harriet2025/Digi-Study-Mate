@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, ClipboardCheck, Users, Layers, Library, ListChecks, type LucideIcon, Mic, PlayCircle, Presentation, Sparkles, TrendingUp } from "lucide-react";
+import { BadgeCheck, ClipboardCheck, Users, Layers, Library, ListChecks, type LucideIcon, PlayCircle, Presentation, Sparkles, TrendingUp } from "lucide-react";
 import { useCurrentUser } from "@/components/auth/useCurrentUser";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -8,10 +8,9 @@ import { usePathname } from "next/navigation";
 export const APP_NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/library", label: "Library", icon: Library },
   { href: "/exams", label: "Exams", icon: ClipboardCheck },
-  { href: "/projects", label: "Projects", icon: Presentation },
+  { href: "/projects", label: "Presentations", icon: Presentation },
   { href: "/rooms", label: "Rooms", icon: Users },
   { href: "/flashcards", label: "Flashcards", icon: Layers },
-  { href: "/practice", label: "Practice", icon: Mic },
   { href: "/progress", label: "Progress", icon: TrendingUp },
 ];
 

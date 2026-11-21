@@ -7,6 +7,7 @@ from ..models import Document, DocumentChunk
 from .chunk import chunk_pages
 from .extract_pdf import extract_pdf
 from .extract_pptx import extract_pptx
+from .images import read_images
 from .types import ExtractedDocument, TextChunk, ValidatedUpload
 
 
@@ -27,12 +28,26 @@ def extract_and_chunk(upload: ValidatedUpload) -> tuple[ExtractedDocument, list[
 def ingest_document(db: Session, upload: ValidatedUpload) -> tuple[Document, int]:
     """Stores the document and its chunks in one transaction. Returns the document and total tokens."""
     extracted, chunks = extract_and_chunk(upload)
+    return _store(db, upload.filename, upload.mime_type, upload.source_type, len(upload.data), extracted, chunks)
 
+
+def ingest_photos(db: Session, title: str, images: list[bytes]) -> tuple[Document, int]:
+    """Photos of slides or notes: each photo is read with the vision model and becomes one page."""
+    extracted = read_images(images)
+    chunks = chunk_pages(extracted.pages)
+    if not chunks:
+        raise AppError("NO_TEXT_CONTENT", 422, "We couldn't read any text in those photos. Try clearer, closer pictures.")
+    return _store(db, title, "image/jpeg", "images", sum(len(i) for i in images), extracted, chunks)
+
+
+def _store(
+    db: Session, filename: str, mime_type: str, source_type: str, byte_size: int, extracted: ExtractedDocument, chunks: list[TextChunk]
+) -> tuple[Document, int]:
     document = Document(
-        filename=upload.filename,
-        mime_type=upload.mime_type,
-        source_type=upload.source_type,
-        byte_size=len(upload.data),
+        filename=filename,
+        mime_type=mime_type,
+        source_type=source_type,
+        byte_size=byte_size,
         page_count=extracted.page_count,
         chunk_count=len(chunks),
     )
@@ -59,7 +74,7 @@ def load_document_text(
     if document is None:
         raise AppError("NOT_FOUND", 404, "That document doesn't exist.")
 
-    unit = "Slide" if document.source_type == "pptx" else "Page"
+    unit = {"pptx": "Slide", "images": "Photo"}.get(document.source_type, "Page")
     selected = [
         c
         for c in document.chunks

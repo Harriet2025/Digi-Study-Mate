@@ -14,12 +14,13 @@ from ..config import get_settings
 from ..db import get_engine
 from ..defense.service import generate_question_set
 from ..errors import AppError
+from ..ingestion.images import is_image_name, read_image
 from ..ingestion.extract_pdf import extract_pdf
 from ..ingestion.extract_pptx import extract_pptx
 from ..ingestion.validate import MAX_FILE_BYTES, OLE_SIGNATURE, ZIP_SIGNATURE, sanitize_filename
 from ..models import Project, new_uuid
 from .pptx_builder import build_deck
-from .prompts import DECK_SYSTEM_PROMPT, DEFENSE_SYSTEM_PROMPT
+from .prompts import DECK_SYSTEM_PROMPT, DEFENSE_SYSTEM_PROMPT, WALKTHROUGH_SYSTEM_PROMPT
 
 logger = logging.getLogger("study_mate.projects")
 
@@ -32,6 +33,7 @@ STAGE_LABELS = {
     "writing": "Writing your slides",
     "designing": "Designing the PowerPoint",
     "coaching": "Preparing your presentation script and defence",
+    "explaining": "Writing your slide-by-slide walkthrough",
     "done": "Ready",
     "failed": "Something went wrong",
 }
@@ -115,6 +117,8 @@ def brief_text_from_file(filename: str | None, data: bytes) -> str:
     name = sanitize_filename(filename or "brief.txt")
     ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
 
+    if is_image_name(name):
+        return read_image(data)
     if ext == "pdf":
         if b"%PDF-" not in data[:1024]:
             raise AppError("UNSUPPORTED_FILE_TYPE", 415, "That file isn't a valid PDF.")
@@ -163,7 +167,12 @@ def queue_project(
     if instructions.strip():
         parts.append(f"<student_instructions>\n{instructions.strip()}\n</student_instructions>")
     if not parts:
-        raise AppError("EMPTY_INPUT", 422, "Upload the brief or describe what the presentation needs to cover.")
+        # Just a topic: write a complete, accurate presentation on it.
+        parts.append(
+            f"<topic>\n{title.strip()}\n</topic>\n"
+            "The student gave only the topic. Write a complete, accurate, well-structured presentation on it for a "
+            "university audience, covering the key ideas, evidence, examples and implications."
+        )
     requirements = "\n\n".join(parts)
     if len(requirements) > MAX_BRIEF_CHARS:
         raise AppError(
@@ -249,8 +258,69 @@ def _run(db: Session, project_id: str) -> None:
     )
     project.defense = defense.model_dump()
 
+    set_stage("explaining", 85)
+    project.walkthrough = write_walkthrough(project)
+
     project.status, project.stage, project.progress = "ready", "done", 100
     db.commit()
+
+
+class _Term(_Strict):
+    term: str
+    definition: str
+
+
+class _IfAsked(_Strict):
+    question: str
+    answer: str
+
+
+class _WalkSlide(_Strict):
+    number: int
+    title: str
+    explanation: str
+    sayItLikeThis: str
+    keyTerms: list[_Term]
+    ifAsked: _IfAsked
+
+
+class _Walkthrough(_Strict):
+    overview: str
+    slides: list[_WalkSlide]
+    beforeYouPresent: list[str]
+
+
+def write_walkthrough(project: Project) -> dict:
+    """Slide-by-slide explanation so the student understands (and can defend) everything they present."""
+    walk = groq_json(
+        WALKTHROUGH_SYSTEM_PROMPT,
+        f"<brief>\n{project.requirements[:4000]}\n</brief>\n\n<slides>\n{deck_text(project.deck or {})}\n</slides>",
+        _Walkthrough,
+        name="walkthrough",
+        max_tokens=8_000,
+        effort="low",
+    )
+    return walk.model_dump()
+
+
+def run_walkthrough_job(project_id: str) -> None:
+    """For presentations made before walkthroughs existed: write one now, in the background."""
+    db = sessionmaker(bind=get_engine(), expire_on_commit=False)()
+    try:
+        project = db.get(Project, project_id)
+        if project is None or project.deck is None:
+            return
+        project.walkthrough = write_walkthrough(project)
+        db.commit()
+    except Exception:
+        logger.exception("walkthrough job %s failed", project_id)
+        db.rollback()
+        project = db.get(Project, project_id)
+        if project is not None:
+            project.walkthrough = {"failed": True}
+            db.commit()
+    finally:
+        db.close()
 
 
 def deck_text(deck: dict) -> str:
@@ -314,6 +384,14 @@ def project_detail(p: Project) -> dict:
         **project_summary(p),
         "deck": p.deck,
         "defense": p.defense,
+        "walkthrough": p.walkthrough if p.walkthrough and not p.walkthrough.get("failed") and not p.walkthrough.get("pending") else None,
+        "walkthroughStatus": "ready"
+        if p.walkthrough and p.walkthrough.get("slides")
+        else "failed"
+        if p.walkthrough and p.walkthrough.get("failed")
+        else "processing"
+        if (p.walkthrough and p.walkthrough.get("pending")) or p.status in ("queued", "processing")
+        else "missing",
         "downloadUrl": f"/api/projects/{p.id}/download" if p.pptx_path else None,
     }
 

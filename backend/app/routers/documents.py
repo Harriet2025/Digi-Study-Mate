@@ -1,13 +1,16 @@
 import shutil
 
-from fastapi import APIRouter, Depends, File, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from ..auth.deps import guest_limit
 from ..db import get_db
 from ..errors import AppError
-from ..ingestion.service import ingest_document
+
+from ..ingestion.images import MAX_IMAGE_BYTES, MAX_IMAGES
+from ..ingestion.service import ingest_document, ingest_photos
 from ..ingestion.validate import MAX_FILE_BYTES, validate_upload
 from ..models import Document, Episode, StudyEvent
 from ..tts.audio import episode_dir
@@ -35,6 +38,25 @@ def upload_document(request: Request, file: UploadFile = File(...), db: Session 
         raise AppError("FILE_TOO_LARGE", 413, f"File exceeds the {MAX_FILE_BYTES // (1024 * 1024)} MB limit.")
     upload = validate_upload(file.filename, file.content_type, data)
     document, total_tokens = ingest_document(db, upload)
+    db.add(StudyEvent(kind="upload", ref_id=document.id, amount=1))
+    db.commit()
+    return {**_document_json(document), "totalTokens": total_tokens}
+
+
+@router.post("/upload/photos", status_code=201)
+async def upload_photos(
+    request: Request,
+    photos: list[UploadFile] = File(...),
+    title: str = Form("", max_length=200),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Photos of slides or notes (JPG, PNG or WebP; up to 20). Each photo is read by the AI and becomes a page."""
+    guest_limit(request, db.scalar(select(func.count(Document.id))) or 0, 1)
+    if len(photos) > MAX_IMAGES:
+        raise AppError("TOO_MANY_FILES", 400, f"Upload up to {MAX_IMAGES} photos at a time.")
+    images = [await p.read(MAX_IMAGE_BYTES + 1) for p in photos]
+    name = (title.strip() or "Photos of slides")[:200]
+    document, total_tokens = await run_in_threadpool(ingest_photos, db, name, images)
     db.add(StudyEvent(kind="upload", ref_id=document.id, amount=1))
     db.commit()
     return {**_document_json(document), "totalTokens": total_tokens}

@@ -1,7 +1,7 @@
 "use client";
 
 import DownloadButton from "@/components/DownloadButton";
-import { FileText, Mic, Presentation, ShieldCheck } from "lucide-react";
+import { BookOpen, FileText, Mic, Presentation, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -11,7 +11,8 @@ import { ClosingSlidePreview, SlidePreview, TitleSlidePreview } from "./SlidePre
 
 const TABS = [
   { key: "slides", label: "Slides", icon: Presentation },
-  { key: "script", label: "Presenter script", icon: FileText },
+  { key: "script", label: "What to say", icon: FileText },
+  { key: "understand", label: "Understand it", icon: BookOpen },
   { key: "coach", label: "Defence coach", icon: ShieldCheck },
   { key: "practice", label: "Practise", icon: Mic },
 ] as const;
@@ -27,7 +28,7 @@ export default function ProjectView({ projectId }: { projectId: string }) {
       setProject(await api.project(projectId));
       setError(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Couldn't load this project.");
+      setError(err instanceof ApiError ? err.message : "Couldn't load this presentation.");
     }
   }, [projectId]);
 
@@ -36,21 +37,22 @@ export default function ProjectView({ projectId }: { projectId: string }) {
   }, [load]);
 
   const building = project && (project.status === "queued" || project.status === "processing");
+  const waiting = building || project?.walkthroughStatus === "processing";
   useEffect(() => {
-    if (!building) return;
+    if (!waiting) return;
     const timer = window.setTimeout(load, 2500);
     return () => window.clearTimeout(timer);
-  }, [building, project, load]);
+  }, [waiting, project, load]);
 
   if (error && !project) return <ErrorNote onRetry={load}>{error}</ErrorNote>;
-  if (!project) return <LoadingBlock label="Opening your project…" />;
+  if (!project) return <LoadingBlock label="Opening your presentation…" />;
   if (project.status === "failed") {
     return (
       <Card className="mx-auto max-w-xl py-10 text-center">
         <p className="font-display text-2xl font-semibold">This presentation couldn&apos;t be made</p>
         <p className="mt-2 text-subtle">{project.error ?? "Something went wrong. Please try again."}</p>
         <LinkButton href="/projects" className="mt-6">
-          Back to projects
+          Back to presentations
         </LinkButton>
       </Card>
     );
@@ -60,11 +62,11 @@ export default function ProjectView({ projectId }: { projectId: string }) {
   return (
     <div>
       <Link href="/projects" className="text-sm font-medium text-subtle hover:text-ink">
-        ← All projects
+        ← All presentations
       </Link>
       <div className="mt-3 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">{project.course ?? "Project"}</p>
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">{project.course ?? "Presentation"}</p>
           <h1 className="mt-1 font-display text-4xl leading-tight font-semibold text-balance sm:text-5xl">{project.title}</h1>
           <p className="mt-2 text-subtle">
             {(project.deck?.slides.length ?? 0) + 2} slides · {project.durationMinutes}-minute talk
@@ -83,7 +85,7 @@ export default function ProjectView({ projectId }: { projectId: string }) {
       </div>
 
       <div className="sticky top-16 z-30 -mx-4 mt-8 border-b border-line bg-canvas/90 px-4 backdrop-blur-md sm:-mx-6 sm:px-6">
-        <nav aria-label="Project" className="flex gap-1 overflow-x-auto py-2">
+        <nav aria-label="Presentation" className="flex gap-1 overflow-x-auto py-2">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -107,6 +109,7 @@ export default function ProjectView({ projectId }: { projectId: string }) {
       <div className="mt-8">
         {tab === "slides" && <SlidesTab project={project} />}
         {tab === "script" && <ScriptTab project={project} />}
+        {tab === "understand" && <UnderstandTab project={project} onChange={setProject} />}
         {tab === "coach" && (
           <CoachTab
             project={project}
@@ -123,10 +126,11 @@ export default function ProjectView({ projectId }: { projectId: string }) {
 }
 
 const STAGES = [
-  { key: "reading", label: "Reading your brief" },
+  { key: "reading", label: "Reading your topic and files" },
   { key: "writing", label: "Writing your slides" },
   { key: "designing", label: "Designing the PowerPoint" },
   { key: "coaching", label: "Preparing your script and defence" },
+  { key: "explaining", label: "Explaining every slide" },
 ];
 
 function Building({ project }: { project: ProjectDetail }) {
@@ -248,6 +252,105 @@ function ScriptTab({ project }: { project: ProjectDetail }) {
         <p className="text-xs font-semibold tracking-[0.16em] uppercase opacity-80">Close with</p>
         <p className="mt-2 font-display text-2xl leading-snug">“{defence.closingLine}”</p>
       </div>
+    </div>
+  );
+}
+
+function UnderstandTab({ project, onChange }: { project: ProjectDetail; onChange: (p: ProjectDetail) => void }) {
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const walk = project.walkthrough;
+
+  const request = async () => {
+    setAsking(true);
+    setError(null);
+    try {
+      onChange(await api.requestWalkthrough(project.projectId));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Couldn't start the walkthrough. Please try again.");
+    } finally {
+      setAsking(false);
+    }
+  };
+
+  if (!walk) {
+    const working = project.walkthroughStatus === "processing" || asking;
+    return (
+      <Card className="mx-auto max-w-xl py-10 text-center">
+        <p className="font-display text-2xl font-semibold">Understand every slide</p>
+        <p className="mt-2 text-subtle">
+          {working
+            ? "Writing your slide-by-slide walkthrough. This takes about a minute."
+            : project.walkthroughStatus === "failed"
+              ? "The walkthrough couldn't be written last time. Try again."
+              : "A plain explanation of each slide, what to say, key terms and the question you're most likely to get."}
+        </p>
+        {working ? (
+          <div className="mt-6 flex justify-center">
+            <Spinner />
+          </div>
+        ) : (
+          <Button className="mt-6" onClick={request}>
+            Explain my presentation
+          </Button>
+        )}
+        {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
+      </Card>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <div className="rounded-2xl bg-ink p-6 text-canvas sm:p-8">
+        <p className="text-xs font-semibold tracking-[0.16em] text-brand-soft uppercase">The big picture</p>
+        <p className="mt-2 text-[17px] leading-relaxed">{walk.overview}</p>
+      </div>
+
+      <ol className="mt-8 space-y-4">
+        {walk.slides.map((s) => (
+          <li key={s.number} className="rounded-2xl border border-line bg-canvas p-5 sm:p-6">
+            <p className="font-display text-xl font-semibold break-words">
+              <span className="text-brand">Slide {s.number}.</span> {s.title}
+            </p>
+            <p className="mt-3 text-[17px] leading-relaxed break-words">{s.explanation}</p>
+
+            <div className="mt-4 rounded-xl bg-brand/5 p-4">
+              <p className="text-xs font-semibold tracking-[0.14em] text-brand uppercase">Say it like this</p>
+              <p className="mt-1 leading-relaxed break-words italic">“{s.sayItLikeThis}”</p>
+            </div>
+
+            {s.keyTerms.length > 0 && (
+              <dl className="mt-4 space-y-2">
+                {s.keyTerms.map((t) => (
+                  <div key={t.term} className="text-sm leading-relaxed break-words">
+                    <dt className="inline font-semibold">{t.term}: </dt>
+                    <dd className="inline text-subtle">{t.definition}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+
+            <details className="group mt-4 rounded-xl border border-line p-4">
+              <summary className="cursor-pointer text-sm font-semibold">If they ask: {s.ifAsked.question}</summary>
+              <p className="mt-2 text-sm leading-relaxed break-words">{s.ifAsked.answer}</p>
+            </details>
+          </li>
+        ))}
+      </ol>
+
+      {walk.beforeYouPresent.length > 0 && (
+        <div className="mt-8 rounded-2xl bg-brand p-6 text-white sm:p-8">
+          <p className="text-xs font-semibold tracking-[0.16em] uppercase opacity-80">Before you present</p>
+          <ul className="mt-3 space-y-2">
+            {walk.beforeYouPresent.map((item) => (
+              <li key={item} className="flex gap-2 leading-relaxed">
+                <span aria-hidden="true">✓</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

@@ -326,7 +326,7 @@ const TIERS: { name: string; price: string; note: string; items: string[]; cta: 
     name: "Student",
     price: "Free during beta",
     note: "With a free account",
-    items: ["Study spaces for all your courses*", "Audio lessons with Alex & Sam", "Projects and defence practice", "Progress, streaks and weak spots"],
+    items: ["Study spaces for all your courses*", "Audio lessons with Alex & Sam", "Presentation coach: slides, script and walkthrough", "Progress, streaks and weak spots"],
     cta: "Create a free account",
     href: "/signup",
     highlight: true,

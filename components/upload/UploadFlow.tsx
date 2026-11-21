@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpenText, Gift, Layers, type LucideIcon, MessageCircleQuestion, Network, PlayCircle, Sparkles, Trophy } from "lucide-react";
+import { BookOpenText, Camera, FileText, Gift, Layers, type LucideIcon, MessageCircleQuestion, Network, PlayCircle, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -10,7 +10,9 @@ import {
   LANGUAGE_OPTIONS,
   LEVEL_OPTIONS,
   STYLE_OPTIONS,
+  unitOf,
   uploadDocument,
+  uploadPhotos,
   type LessonLanguage,
   type LessonLevel,
   type LessonStyle,
@@ -51,8 +53,28 @@ export default function UploadFlow({ initialDocumentId }: { initialDocumentId?: 
       });
   }, [initialDocumentId]);
 
-  const startUpload = async (file: File) => {
+  const startUpload = async (files: File[]) => {
     setError(null);
+    const photos = files.filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name));
+    if (photos.length > 0) {
+      if (photos.length !== files.length) return setError("Upload either photos or one PDF/PowerPoint file, not both together.");
+      if (photos.length > 20) return setError("Choose up to 20 photos at a time.");
+      setFileName(`${photos.length} photo${photos.length === 1 ? "" : "s"}`);
+      setUploadFraction(0);
+      setStep("uploading");
+      try {
+        const me = await ensureSession();
+        setIsGuest(me.isGuest);
+        const uploaded = await uploadPhotos(photos, "Photos of slides", setUploadFraction);
+        setDoc(uploaded);
+        setStep("configure");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "The photos couldn't be uploaded. Please try again.");
+        setStep("pick");
+      }
+      return;
+    }
+    const file = files[0]!;
     const ext = file.name.split(".").pop()?.toLowerCase();
     if (ext !== "pdf" && ext !== "pptx") {
       setError(ext === "ppt" ? "Old .ppt files aren't supported. Save the deck as .pptx and try again." : "Choose a PDF or PowerPoint (.pptx) file.");
@@ -126,8 +148,9 @@ function Stepper({ current }: { current: 1 | 2 }) {
   );
 }
 
-function DropZone({ onFile }: { onFile: (file: File) => void }) {
+function DropZone({ onFile }: { onFile: (files: File[]) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
 
   return (
@@ -140,19 +163,34 @@ function DropZone({ onFile }: { onFile: (file: File) => void }) {
       onDrop={(e) => {
         e.preventDefault();
         setDragging(false);
-        const file = e.dataTransfer.files[0];
-        if (file) onFile(file);
+        if (e.dataTransfer.files.length) onFile([...e.dataTransfer.files]);
       }}
       className={`relative flex flex-col items-center rounded-2xl border-2 border-dashed px-6 py-16 text-center transition ${
         dragging ? "border-brand bg-brand-soft/40" : "border-line bg-muted/40 hover:border-brand/50"
       }`}
     >
       <div className="grid size-16 place-items-center rounded-2xl bg-brand text-white shadow-md shadow-brand/25">{Icons.upload}</div>
-      <h2 className="mt-5 font-display text-2xl font-semibold">Drop your slides or notes here</h2>
-      <p className="mt-2 text-subtle">PDF or PowerPoint (.pptx), up to 25 MB</p>
-      <Button className="mt-6" onClick={() => inputRef.current?.click()}>
-        Choose a file
-      </Button>
+      <h2 className="mt-5 font-display text-2xl font-semibold">Add your slides or notes</h2>
+      <p className="mt-2 text-subtle">A PDF or PowerPoint, or photos of the slides</p>
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+        <Button onClick={() => inputRef.current?.click()}>
+          <FileText className="size-4" aria-hidden="true" /> Choose a file
+        </Button>
+        <Button variant="secondary" onClick={() => photoRef.current?.click()}>
+          <Camera className="size-4" aria-hidden="true" /> Photos of slides
+        </Button>
+      </div>
+      <input
+        ref={photoRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="sr-only"
+        onChange={(e) => {
+          if (e.target.files?.length) onFile([...e.target.files]);
+          e.target.value = "";
+        }}
+      />
       <input
         ref={inputRef}
         type="file"
@@ -160,14 +198,14 @@ function DropZone({ onFile }: { onFile: (file: File) => void }) {
         className="sr-only"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) onFile(file);
+          if (file) onFile([file]);
           e.target.value = "";
         }}
       />
       <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-subtle">
-        <li>✓ Headers, footers and page numbers removed</li>
-        <li>✓ Tables and speaker notes kept</li>
-        <li>✓ Scanned PDFs need OCR first</li>
+        <li>PDF or .pptx up to 25 MB</li>
+        <li>Up to 20 photos</li>
+        <li>Speaker notes and tables kept</li>
       </ul>
     </div>
   );
@@ -188,7 +226,7 @@ function UploadingCard({ fileName, fraction }: { fileName: string; fraction: num
 
 function LessonForm({ doc, isGuest, onChangeFile }: { doc: UploadedDocument; isGuest: boolean; onChangeFile: () => void }) {
   const router = useRouter();
-  const unit = doc.sourceType === "pptx" ? "slide" : "page";
+  const unit = unitOf(doc.sourceType);
   const [title, setTitle] = useState(doc.filename.replace(/\.(pdf|pptx)$/i, ""));
   const [pageStart, setPageStart] = useState(1);
   const [pageEnd, setPageEnd] = useState(Math.min(doc.pageCount, SUGGESTED_PAGES));
@@ -244,12 +282,12 @@ function LessonForm({ doc, isGuest, onChangeFile }: { doc: UploadedDocument; isG
     <form onSubmit={submit} className="space-y-6">
       <Card className="flex items-center gap-4">
         <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-sm font-bold text-brand-deep uppercase">
-          {doc.sourceType}
+          {doc.sourceType === "images" ? <Camera className="size-5" aria-hidden="true" /> : doc.sourceType}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{doc.filename}</p>
           <p className="text-sm text-subtle">
-            {doc.pageCount} {unit}s ready
+            {doc.pageCount} {unit}{doc.pageCount === 1 ? "" : "s"} ready
           </p>
         </div>
         <Button variant="ghost" onClick={onChangeFile}>
@@ -336,7 +374,7 @@ function LessonForm({ doc, isGuest, onChangeFile }: { doc: UploadedDocument; isG
             <Gift className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
             <span>
               <span className="font-semibold text-ink">Free trial:</span> your first lesson covers up to 15 {unit}s. Create a free
-              account afterwards to keep it and unlock audio lessons, projects and defence practice.
+              account afterwards to keep it and unlock audio lessons and the presentation coach.
             </span>
           </p>
         ) : (
@@ -364,7 +402,7 @@ function LessonForm({ doc, isGuest, onChangeFile }: { doc: UploadedDocument; isG
           href={`/practice?documentId=${doc.documentId}&pageStart=${pageStart}&pageEnd=${pageEnd}`}
           className="text-center text-sm font-medium text-brand-deep underline-offset-4 hover:underline"
         >
-          Practise defence questions on these {unit}s instead
+          Practise likely questions on these {unit}s instead
         </Link>
         <Button type="submit" disabled={submitting || !rangeValid} className="px-7 py-3 text-base">
           {submitting ? <Spinner className="size-4" /> : <Sparkles className="size-4" aria-hidden="true" />}

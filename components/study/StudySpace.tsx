@@ -231,7 +231,7 @@ function TrialBanner({ guideId }: { guideId: string }) {
         <Sparkles className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden="true" />
         <span>
           <span className="font-semibold">You&apos;re on a free trial.</span> Create a free account to keep this lesson and unlock
-          audio, projects and defence practice.
+          audio and the presentation coach.
         </span>
       </p>
       <Link

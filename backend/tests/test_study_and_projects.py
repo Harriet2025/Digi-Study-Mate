@@ -92,6 +92,21 @@ FAKE_QUESTIONS = {
     ],
 }
 
+FAKE_WALK = {
+    "overview": "Cells turn glucose into usable energy in stages.",
+    "slides": [
+        {
+            "number": 1,
+            "title": "Cellular respiration",
+            "explanation": "This slide introduces how cells release energy.",
+            "sayItLikeThis": "Today I'll show you how a cell turns sugar into energy.",
+            "keyTerms": [{"term": "ATP", "definition": "The cell's energy currency."}],
+            "ifAsked": {"question": "Why does this matter?", "answer": "Every living cell depends on it."},
+        }
+    ],
+    "beforeYouPresent": ["Time yourself once."],
+}
+
 captured_chat_prompts: list[str] = []
 
 
@@ -118,6 +133,7 @@ def fakes(monkeypatch):
                 "defense_question_set": FAKE_QUESTIONS,
                 "audio_script": FAKE_SCRIPT,
                 "flashcard_deck": FAKE_FLASHCARD_DECK,
+                "walkthrough": FAKE_WALK,
             }[name]
         )
 
@@ -234,7 +250,7 @@ def test_project_flow(client, tmp_path):
 
 def test_project_validation(client):
     r = client.post("/api/projects", data={"title": "x"})
-    assert r.status_code == 422 and r.json()["error"]["code"] == "EMPTY_INPUT"
+    assert r.status_code == 202  # a topic alone is enough now
     r = client.post("/api/projects", data={"title": "x"}, files={"brief": ("brief.exe", b"MZ", "application/octet-stream")})
     assert r.status_code == 415
     r = client.post("/api/projects", data={"title": "x", "instructions": "y" * 11_000, "slideCount": "9"},

@@ -28,6 +28,7 @@ import {
   LANGUAGE_OPTIONS,
   styleLabel,
   timeAgo,
+  unitOf,
   type EpisodeSummary,
   type GuideSummary,
   type LibraryData,
@@ -346,7 +347,7 @@ function DocumentCover({ type, pages }: { type: string; pages: number }) {
     >
       <span className="absolute top-0 right-0 size-4 rounded-bl-md bg-white/25" />
       <span className="text-center leading-tight">
-        <span className="block text-[11px] font-bold tracking-wide uppercase">{type}</span>
+        <span className="block text-[11px] font-bold tracking-wide uppercase">{type === "images" ? "Photos" : type}</span>
         <span className="block text-[10px] text-white/70">{pages} pp</span>
       </span>
     </span>
@@ -377,7 +378,7 @@ function DocumentCard({ doc, onChanged }: { doc: Doc; onChanged: () => void }) {
           <div className="min-w-0">
             <h3 className="truncate font-display text-xl font-bold">{doc.filename.replace(/\.(pdf|pptx)$/i, "")}</h3>
             <p className="text-sm text-subtle">
-              {doc.pageCount} {doc.sourceType === "pptx" ? "slides" : "pages"} · added {timeAgo(doc.createdAt)}
+              {doc.pageCount} {unitOf(doc.sourceType)}s · added {timeAgo(doc.createdAt)}
             </p>
           </div>
         </div>
@@ -433,7 +434,7 @@ function DocumentCard({ doc, onChanged }: { doc: Doc; onChanged: () => void }) {
             )}
           </div>
           <div>
-            <Label icon={Mic}>Defence practice</Label>
+            <Label icon={Mic}>Question practice</Label>
             {doc.questionSets.length === 0 ? (
               <EmptyRow href={`/practice?documentId=${doc.documentId}`} text="No practice sets yet." cta="Start one" />
             ) : (

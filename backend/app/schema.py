@@ -64,6 +64,12 @@ def _mysql_column_changes(conn, inspector) -> list[str]:
         conn.execute(text("ALTER TABLE flashcards MODIFY episode_id VARCHAR(36) NULL"))
         changes.append("flashcards.episode_id nullable")
 
+    source = next(c for c in inspector.get_columns("documents") if c["name"] == "source_type")
+    if "images" not in set(getattr(source["type"], "enums", ()) or ()):
+        # Photos of slides are stored as their own kind of document.
+        conn.execute(text("ALTER TABLE documents MODIFY source_type ENUM('pdf', 'pptx', 'images') NOT NULL"))
+        changes.append("documents.source_type values")
+
     kind = next(c for c in inspector.get_columns("study_events") if c["name"] == "kind")
     current = set(getattr(kind["type"], "enums", ()) or ())
     if not set(STUDY_EVENT_KINDS) <= current:

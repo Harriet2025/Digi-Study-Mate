@@ -89,7 +89,7 @@ export default function AuthForm({ mode, next, error, reason }: { mode: Mode; ne
       <p className="mt-2 text-subtle">
         {isSignup
           ? trial
-            ? "Create a free account and everything from your trial comes with you, plus audio lessons, projects and defence practice."
+            ? "Create a free account and everything from your trial comes with you, plus audio lessons and the presentation coach."
             : "Your lessons, flashcards and projects stay private to you."
           : trial
             ? "Log in and we'll add your trial lesson to your account."

@@ -9,5 +9,5 @@ export const FEATURES: { icon: LucideIcon; title: string; body: string; image: s
   { icon: Trophy, title: "Rated quizzes", body: "Know when you're ready.", image: "quiz", alt: "A multiple-choice quiz question" },
   { icon: Youtube, title: "Videos & reading", body: "Hand-picked YouTube and reading.", image: "resources", alt: "A YouTube video suggestion" },
   { icon: Headphones, title: "Podcast mode", body: "Two hosts explain it aloud.", image: "podcast", alt: "The audio lesson player with a live transcript" },
-  { icon: Mic, title: "Defence practice", body: "Answer out loud, get graded.", image: "defence", alt: "A tough examiner question" },
+  { icon: Mic, title: "Question practice", body: "Answer out loud, get graded.", image: "defence", alt: "A tough examiner question" },
 ];

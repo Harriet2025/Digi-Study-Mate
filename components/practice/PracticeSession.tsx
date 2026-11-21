@@ -50,7 +50,7 @@ export default function PracticeSession({ setId, initialQuestionId }: { setId: s
       </Link>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">Defence practice</p>
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand-deep uppercase">Question practice</p>
           <h1 className="mt-1 font-display text-4xl font-semibold text-balance">{set.title ?? "Practice set"}</h1>
         </div>
         <p className="text-sm text-subtle">

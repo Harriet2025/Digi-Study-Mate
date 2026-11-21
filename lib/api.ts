@@ -18,7 +18,7 @@ export type EpisodeStatus = "queued" | "processing" | "ready" | "failed";
 export interface UploadedDocument {
   documentId: string;
   filename: string;
-  sourceType: "pdf" | "pptx";
+  sourceType: "pdf" | "pptx" | "images";
   pageCount: number;
   chunkCount?: number;
   totalTokens?: number;
@@ -311,9 +311,26 @@ export interface ProjectSummary {
   questionSetId: string | null;
 }
 
+export interface WalkthroughSlide {
+  number: number;
+  title: string;
+  explanation: string;
+  sayItLikeThis: string;
+  keyTerms: { term: string; definition: string }[];
+  ifAsked: { question: string; answer: string };
+}
+
+export interface Walkthrough {
+  overview: string;
+  slides: WalkthroughSlide[];
+  beforeYouPresent: string[];
+}
+
 export interface ProjectDetail extends ProjectSummary {
   deck: Deck | null;
   defense: DefensePack | null;
+  walkthrough: Walkthrough | null;
+  walkthroughStatus: "ready" | "processing" | "failed" | "missing";
   downloadUrl: string | null;
 }
 
@@ -582,6 +599,7 @@ export const api = {
   createProject: (form: FormData) => request<ProjectSummary>("/api/projects", { method: "POST", body: form }),
   deleteProject: (id: string) => request<void>(`/api/projects/${id}`, { method: "DELETE" }),
   practiceProject: (id: string) => request<{ setId: string }>(`/api/projects/${id}/practice`, { method: "POST" }),
+  requestWalkthrough: (id: string) => request<ProjectDetail>(`/api/projects/${id}/walkthrough`, { method: "POST" }),
 
   /** Returns {status: "processing"} while the sheet is being written; poll until it's ready. */
   summary: (guideId: string) => request<SummarySheet | { status: "processing" }>(`/api/guides/${guideId}/summary`),
@@ -634,6 +652,60 @@ export const api = {
     return request<Evaluation>("/api/defense/evaluate", { method: "POST", body: form });
   },
 };
+
+/** "slide", "photo" or "page", for labels like "12 slides ready". */
+export function unitOf(sourceType: UploadedDocument["sourceType"]): string {
+  return sourceType === "pptx" ? "slide" : sourceType === "images" ? "photo" : "page";
+}
+
+/** Shrinks a phone photo to at most 1600px (JPEG) before upload, keeping it the right way up. */
+async function shrinkPhoto(file: File): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    return await new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("encode"))), "image/jpeg", 0.82));
+  } catch {
+    return file; // the server can still handle the original
+  }
+}
+
+/** Photos of slides or notes: each becomes a page (the AI reads the text). Progress covers shrinking + upload. */
+export async function uploadPhotos(files: File[], title: string, onProgress: (fraction: number) => void): Promise<UploadedDocument> {
+  const form = new FormData();
+  form.append("title", title);
+  for (let i = 0; i < files.length; i++) {
+    const blob = await shrinkPhoto(files[i]!);
+    form.append("photos", blob, files[i]!.name.replace(/\.[^.]+$/, "") + ".jpg");
+    onProgress(((i + 1) / files.length) * 0.3);
+  }
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload/photos");
+    xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(0.3 + (e.loaded / e.total) * 0.6);
+    xhr.onload = () => {
+      let data: unknown = null;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        /* non-JSON error page */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(data as UploadedDocument);
+      else {
+        const err = (data as { error?: { message?: string; code?: string } } | null)?.error;
+        if (xhr.status === 401 && err?.code === "UNAUTHENTICATED") redirectToLogin();
+        if (xhr.status === 403 && err?.code === "SIGN_UP_REQUIRED") redirectToSignup();
+        reject(new ApiError(err?.message ?? "The photos couldn't be uploaded. Please try again.", xhr.status, err?.code ?? "UNKNOWN"));
+      }
+    };
+    xhr.onerror = () => reject(new ApiError("Can't reach Study Mate. Check your connection and try again.", 0, "NETWORK"));
+    xhr.send(form);
+  });
+}
 
 /** Uploads with progress events (fetch can't report upload progress). */
 export function uploadDocument(file: File, onProgress: (fraction: number) => void): Promise<UploadedDocument> {
